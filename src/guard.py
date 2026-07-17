@@ -80,5 +80,5 @@ def validate_xyzt_data(
             "test and sample_submission row counts must match; "
             f"received {len(test)} and {len(sample_submission)}"
         )
-    if not test["id"].equals(sample_submission["id"]):
+    if not pd.Index(test["id"]).equals(pd.Index(sample_submission["id"])):
         raise ValueError("test and sample_submission IDs must match in the same order")
