@@ -1,6 +1,7 @@
 """Shared helpers copied from the Prophet/dumb reference notebook."""
 
 import datetime as dt
+import calendar
 import os
 import sys
 from contextlib import contextmanager
@@ -48,3 +49,10 @@ def display_side_by_side(*args):
             df = pd.DataFrame(df, columns=["value"])
         html_str += df.to_html()
     display_html(html_str.replace("table", 'table style="display:inline"'), raw=True)
+
+
+def days_in_month_total_sales_reference(my_date):
+    """Reproduce eda-of-total-sales.ipynb cell 49's DiM helper."""
+    my_year = my_date.year
+    my_month = my_date.month
+    return calendar.monthrange(my_year, my_month)[1]

@@ -63,4 +63,29 @@ does not adjust it to match the comment.
 
 ## Current status
 
-Milestone 1 establishes documentation and the active-solution declaration only. No model code, data handling, feature logic, prediction logic, or leaderboard-affecting behavior has been implemented or changed.
+### Implemented primary pipeline
+
+The active `xyzt_awesome` path is implemented and verified from the raw
+competition CSVs through `outputs/submission.csv`. It preserves the XYZT
+notebook's date-index loading, four date fields, weighted quadratic annual
+growth with denominator `5`, item-specific weekday lookup, global month factor,
+global store factor, row-wise prediction, NumPy rounding, and index-free CSV
+write.
+
+### Implemented isolated alternatives
+
+- `4th_place_sol_n.py`: complete isolated factor-model path and `submittal.csv`
+  formatting.
+- `store-item-polyfit-showcase.ipynb`: isolated date features, rate-`2.5`
+  weighted polynomial factor model, and submission construction.
+- `store-prediction.ipynb`: isolated unweighted and rate-`6` weighted models,
+  plus the source's alias-preserving external-submission blend behavior.
+- `blend-boosting-for-best-score-on-demand-forecast.ipynb`: isolated loading,
+  fixed 32-column weighted blend, and fixed 45,000-ID submission construction.
+- `eda-prophet-winning-solution-3-0.ipynb`: source-specific SMAPE, precomputed
+  CV loaders/aggregations, utility helpers, dumb-model reference classes, and
+  date-part helper.
+
+The external candidate files required by the two ensemble workflows and the
+Prophet/dumb CV artifacts are still not present. Their functions require the
+caller to supply the exact files; no replacement predictions are generated.
