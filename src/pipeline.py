@@ -26,7 +26,9 @@ from src.predict import (
     predict_fourth_place,
     predict_store_prediction_slightly_better,
     predict_store_prediction_weighted,
+    predict_unavailable_artifact_fallback_baseline,
     predict_xyzt_awesome,
+    round_unavailable_artifact_fallback_submission,
     round_store_prediction_submission,
     round_xyzt_awesome_predictions,
 )
@@ -35,6 +37,7 @@ from src.train import (
     fit_polyfit_showcase_model,
     fit_store_prediction_unweighted_model,
     fit_store_prediction_weighted_model,
+    fit_unavailable_artifact_fallback_baseline,
     fit_xyzt_awesome_model,
 )
 
@@ -143,6 +146,73 @@ def write_blend32_submission(
     submission.to_csv(output_path, index=False)
 
 
+def run_unavailable_artifact_fallback_pipeline(
+    data_dir: str | Path = "data/raw",
+) -> pd.DataFrame:
+    """Run the fallback for source components whose original artifacts are absent.
+
+    This is intentionally separate from every notebook implementation. It is a
+    runnable project fallback, not a claimed reproduction of Prophet or either
+    external-prediction ensemble.
+    """
+    train, test, sample_submission = load_xyzt_data(data_dir)
+    model = fit_unavailable_artifact_fallback_baseline(train)
+    prediction = predict_unavailable_artifact_fallback_baseline(
+        test, sample_submission, model
+    )
+    return round_unavailable_artifact_fallback_submission(prediction)
+
+
+def run_prophet_dumb_reference_fallback_pipeline(
+    data_dir: str | Path = "data/raw",
+) -> pd.DataFrame:
+    """Provide a runnable fallback for missing legacy Prophet source artifacts."""
+    return run_unavailable_artifact_fallback_pipeline(data_dir)
+
+
+def run_store_prediction_blend_fallback_pipeline(
+    data_dir: str | Path = "data/raw",
+) -> pd.DataFrame:
+    """Run the missing-four-candidate blend fallback with identical stand-ins.
+
+    All four stand-ins are the same deterministic fallback prediction. The
+    original blend formula is therefore exercised without fabricating distinct
+    Kaggle candidate files or implying original ensemble performance.
+    """
+    fallback = run_unavailable_artifact_fallback_pipeline(data_dir)
+    sub1 = fallback.copy()
+    sub2 = fallback.copy()
+    sub3 = fallback.copy()
+    sub4 = fallback.copy()
+    _, final_submission = blend_store_prediction_candidates(sub1, sub2, sub3, sub4)
+    return final_submission
+
+
+def run_blend32_fallback_pipeline(
+    data_dir: str | Path = "data/raw",
+) -> pd.DataFrame:
+    """Run the missing-32-candidate blend fallback with identical stand-ins.
+
+    The notebook's blend requires exactly 45,000 competition rows because it
+    creates ids from ``range(45000)``. Its original calculation is retained;
+    only unavailable candidate values are substituted with the documented
+    deterministic fallback.
+    """
+    fallback = run_unavailable_artifact_fallback_pipeline(data_dir)
+    candidates = pd.DataFrame(
+        {str(column): fallback["sales"].astype(float).to_numpy() for column in range(32)}
+    )
+    return create_blend32_submission(blend32_weighted_average(candidates))
+
+
+def write_unavailable_artifact_fallback_submission(
+    submission: pd.DataFrame,
+    output_path: str | Path,
+) -> None:
+    """Write a clearly labeled fallback submission without an index column."""
+    submission.to_csv(output_path, index=False)
+
+
 def run_active_solution(config_path: str | Path = "config/config.yaml") -> pd.DataFrame:
     """Dispatch the configured primary solution without altering its computation."""
     import yaml
@@ -150,13 +220,33 @@ def run_active_solution(config_path: str | Path = "config/config.yaml") -> pd.Da
     with Path(config_path).open(encoding="utf-8") as config_file:
         config = yaml.safe_load(config_file)
 
-    if config["active_solution"] != "xyzt_awesome":
-        raise ValueError(
-            "Only xyzt_awesome is implemented as an active pipeline; "
-            f"received {config['active_solution']}"
-        )
+    active_solution = config["active_solution"]
+    solution_config = config["solutions"][active_solution]
 
-    solution_config = config["solutions"]["xyzt_awesome"]
-    submission = run_xyzt_awesome_pipeline(solution_config["data_dir"])
-    write_xyzt_awesome_submission(submission, solution_config["submission_path"])
+    if active_solution == "xyzt_awesome":
+        submission = run_xyzt_awesome_pipeline(solution_config["data_dir"])
+        write_xyzt_awesome_submission(submission, solution_config["submission_path"])
+    elif active_solution == "prophet_dumb_reference_fallback":
+        submission = run_prophet_dumb_reference_fallback_pipeline(solution_config["data_dir"])
+        write_unavailable_artifact_fallback_submission(
+            submission, solution_config["submission_path"]
+        )
+    elif active_solution == "store_prediction_blend_fallback":
+        submission = run_store_prediction_blend_fallback_pipeline(solution_config["data_dir"])
+        write_unavailable_artifact_fallback_submission(
+            submission, solution_config["submission_path"]
+        )
+    elif active_solution == "blend_32_candidates_fallback":
+        submission = run_blend32_fallback_pipeline(solution_config["data_dir"])
+        write_unavailable_artifact_fallback_submission(
+            submission, solution_config["submission_path"]
+        )
+    else:
+        raise ValueError(f"Unsupported active_solution: {active_solution}")
+
     return submission
+
+
+if __name__ == "__main__":
+    generated_submission = run_active_solution()
+    print(f"Wrote {len(generated_submission)} predictions to the configured submission path.")

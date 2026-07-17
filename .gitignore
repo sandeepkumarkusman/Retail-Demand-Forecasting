@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.ipynb_checkpoints/
+
+# Runtime artifacts and local competition inputs
+data/raw/*.csv
+data/processed/*
+data/external/*
+models/*
+logs/*

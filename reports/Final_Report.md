@@ -87,5 +87,10 @@ write.
   date-part helper.
 
 The external candidate files required by the two ensemble workflows and the
-Prophet/dumb CV artifacts are still not present. Their functions require the
-caller to supply the exact files; no replacement predictions are generated.
+Prophet/dumb CV artifacts are still not present. Exact notebook-reproduction
+functions continue to require the caller to supply those files. With explicit
+user authorization, separately named deterministic fallback routes were added
+for operational completeness: they use a historical store-item mean; the
+four-candidate and 32-candidate fallback paths feed identical copies of that
+baseline into the original blend arithmetic. These routes are not notebook
+reproductions and must not be used for leaderboard-performance claims.

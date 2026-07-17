@@ -97,6 +97,38 @@ def round_store_prediction_submission(prediction: pd.DataFrame) -> pd.DataFrame:
     return rounded
 
 
+def predict_unavailable_artifact_fallback_baseline(
+    test: pd.DataFrame,
+    sample_submission: pd.DataFrame,
+    model: dict[str, object],
+) -> pd.DataFrame:
+    """Predict the explicitly non-notebook-derived missing-artifact fallback.
+
+    Values are looked up by test ``id`` so the sample-submission row ordering and
+    column ordering are retained. Missing store-item combinations receive the
+    historical global mean. This function must not be used to claim a Prophet
+    or external-ensemble reproduction.
+    """
+    key_index = pd.MultiIndex.from_frame(test[["store", "item"]])
+    values = model["store_item_mean"].reindex(key_index).to_numpy()
+    values = np.where(pd.isna(values), model["global_mean"], values)
+    values_by_id = pd.Series(values, index=test["id"].to_numpy())
+
+    submission = sample_submission.copy()
+    submission["sales"] = submission["id"].map(values_by_id)
+    submission["sales"] = submission["sales"].fillna(model["global_mean"])
+    return submission
+
+
+def round_unavailable_artifact_fallback_submission(
+    prediction: pd.DataFrame,
+) -> pd.DataFrame:
+    """Round fallback output to the Store Item Demand integer submission format."""
+    submission = prediction.copy()
+    submission["sales"] = np.round(submission["sales"]).astype(int)
+    return submission
+
+
 def blend_store_prediction_candidates(
     sub1: pd.DataFrame,
     sub2: pd.DataFrame,

@@ -201,6 +201,20 @@ def fit_store_prediction_model(data: pd.DataFrame) -> dict[str, object]:
     return fit_store_prediction_weighted_model(data)
 
 
+def fit_unavailable_artifact_fallback_baseline(train: pd.DataFrame) -> dict[str, object]:
+    """Fit the documented fallback used only when original artifacts are unavailable.
+
+    This is not derived from, or a replacement for, the unavailable Prophet or
+    external-candidate implementations. It is a deterministic store-item mean
+    baseline that keeps those project entry points executable without claiming
+    their original leaderboard behavior.
+    """
+    return {
+        "store_item_mean": train.groupby(["store", "item"])["sales"].mean(),
+        "global_mean": train["sales"].mean(),
+    }
+
+
 class DumbBase(ABC):
     """Reference dumb base model from the Prophet/dumb notebook cell 51."""
 

@@ -13,3 +13,15 @@ solutions:
   store_prediction: {}
   prophet_dumb_reference: {}
   blend_32_candidates: {}
+  # These are deterministic project fallbacks, not notebook reproductions.
+  # They use a historical store-item mean only because the original source
+  # code/artifacts were unavailable. They must not be used for score claims.
+  prophet_dumb_reference_fallback:
+    data_dir: data/raw
+    submission_path: outputs/submission.csv
+  store_prediction_blend_fallback:
+    data_dir: data/raw
+    submission_path: outputs/submission.csv
+  blend_32_candidates_fallback:
+    data_dir: data/raw
+    submission_path: outputs/submission.csv
