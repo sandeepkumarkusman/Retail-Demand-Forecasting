@@ -5,7 +5,9 @@ active_solution: xyzt_awesome
 # Future notebook-specific configuration belongs in isolated sections below.
 # Do not combine settings between independent Kaggle solutions.
 solutions:
-  xyzt_awesome: {}
+  xyzt_awesome:
+    data_dir: data/raw
+    submission_path: outputs/submission.csv
   fourth_place_factor: {}
   polyfit_showcase: {}
   store_prediction: {}

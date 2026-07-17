@@ -48,6 +48,19 @@ The analyzed Prophet/dumb-model notebook describes a reported Top-1 approach but
 - `weight_predictor_1.csv`, `weight_predictor_3.csv`, and `weight_predictor_4.csv` required by `store-prediction.ipynb`.
 - Candidate validation histories, private scores, and submission provenance for several alternative pipelines.
 
+## Fourth-place compatibility note
+
+`4th_place_sol_n.py` is implemented as an isolated alternative path. Its removed
+`np.product` API call is replaced only with the behavior-equivalent supported
+NumPy API, `np.prod`; no surrounding formula, factor, ordering, or parameter was
+changed.
+
+Its source comment reports a mean CAGR of approximately `0.06216856`. Running
+the source formula unchanged on the supplied raw competition CSVs produces a
+mean CAGR of approximately `0.04113522`. This is treated as a notebook
+annotation mismatch. The implementation preserves the original calculation and
+does not adjust it to match the comment.
+
 ## Current status
 
 Milestone 1 establishes documentation and the active-solution declaration only. No model code, data handling, feature logic, prediction logic, or leaderboard-affecting behavior has been implemented or changed.
