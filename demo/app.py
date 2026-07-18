@@ -302,10 +302,11 @@ with tab2:
     # Historical Statistics
     st.subheader("📈 Historical Statistics")
     hist_stats = hist['sales'].describe()
+    total_sales = hist['sales'].sum()
     col1, col2, col3 = st.columns(3)
     col1.metric("Mean Sales", f"{hist_stats['mean']:.1f}")
     col2.metric("Std Sales", f"{hist_stats['std']:.1f}")
-    col3.metric("Total Sales", f"{hist_stats['sum']:.0f}")
+    col3.metric("Total Sales", f"{total_sales:.0f}")
     
     # Seasonality Analysis
     st.subheader("📅 Seasonality Patterns")
