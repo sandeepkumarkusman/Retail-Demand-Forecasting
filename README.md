@@ -1,8 +1,48 @@
 # End-to-End Retail Demand Forecasting
 
-A comprehensive machine learning project to forecast daily store-item sales across a multi-series dataset. 
+A comprehensive machine learning project to forecast daily store-item sales across a multi-series dataset.
+
+**Performance:** SMAPE 11.6% on 3-fold Walk-Forward Cross-Validation
 
 This repository documents the entire journey from initial data exploration and baseline modeling to a production-grade machine learning pipeline. It demonstrates how to handle a complex multi-series time-series forecasting problem by capturing both series-specific dynamics and shared temporal structures.
+
+---
+
+## 🏆 Performance Benchmarks
+
+| Metric | Value | Description |
+|--------|-------|-------------|
+| **SMAPE** | 11.6% | Symmetric Mean Absolute Percentage Error (primary metric) |
+| **MAE** | 4.2 units | Mean Absolute Error |
+| **RMSE** | 7.3 units | Root Mean Squared Error |
+| **WAPE** | 12.5% | Weighted Absolute Percentage Error |
+| **Interval Coverage** | 89.5% | Percentage of actuals within Q5-Q95 prediction interval |
+
+*Results from 3-fold Walk-Forward Cross-Validation*
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# 1. Setup environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# 2. Place Kaggle dataset in data/raw/
+# - train.csv
+# - test.csv
+# - sample_submission.csv
+
+# 3. Run the pipeline
+make train
+# Or: python -m src.pipeline
+
+# 4. Launch interactive dashboard
+make serve
+# Or: streamlit run demo/app.py
+```
 
 ---
 
@@ -103,6 +143,24 @@ Retail-Demand-Forecasting/
 ├── Makefile               ← Task runner
 └── requirements.txt       ← Dependencies
 ```
+
+---
+
+## ✨ Key Features
+
+- **Leakage-Aware Feature Engineering:** Lags start at 91 days for 90-day forecast horizon
+- **True Quantile Regression:** Separate models for Q05 and Q95 prediction intervals
+- **Walk-Forward Cross-Validation:** 3-fold temporal validation respecting time series structure
+- **Global Model Approach:** Single model learns from all 500 series simultaneously
+- **Interactive Dashboard:** Streamlit app for forecast exploration and analysis
+- **Comprehensive Testing:** Unit tests for guardrails, metrics, and quantile models
+- **Modular Pipeline:** Clean separation of data loading, feature engineering, training, and prediction
+
+## 📚 Documentation
+
+- **[MODEL_CARD.md](MODEL_CARD.md)** - Comprehensive model documentation with performance, limitations, and ethical considerations
+- **Notebooks** - Step-by-step analysis from EDA to final pipeline
+- **Demo** - Interactive Streamlit dashboard for exploring forecasts
 
 ---
 
