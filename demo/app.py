@@ -272,32 +272,27 @@ with tab2:
             st.bar_chart(fi_df.head(15).set_index('feature')['importance'])
     
     # SHAP Explainability
-    st.subheader("🔍 SHAP Explainability")
-    try:
-        import shap
-        MODEL_PATH = ROOT / "models" / "point_model.joblib"
+    st.subheader("🔍 Feature Importance Analysis")
+    st.info("Feature importance shows which features the model relies on most for predictions")
+    
+    FI_PATH = ROOT / "outputs" / "feature_importance.csv"
+    if FI_PATH.exists():
+        fi_df = pd.read_csv(FI_PATH)
+        st.write("**Top 15 Most Important Features**")
+        st.dataframe(fi_df.head(15), use_container_width=True)
         
-        if MODEL_PATH.exists():
-            import joblib
-            model = joblib.load(MODEL_PATH)
-            
-            st.info("SHAP (SHapley Additive exPlanations) shows how each feature contributes to individual predictions")
-            st.warning("⚠️ SHAP requires the full feature engineering pipeline (47 features). Currently showing feature importance instead.")
-            
-            # Show feature importance as alternative
-            FI_PATH = ROOT / "outputs" / "feature_importance.csv"
-            if FI_PATH.exists():
-                fi_df = pd.read_csv(FI_PATH)
-                st.write("**Top 10 Feature Contributions**")
-                st.dataframe(fi_df.head(10), use_container_width=True)
-            else:
-                st.info("Feature importance file not found. Run the pipeline first to generate it.")
-        else:
-            st.info("Model not found. Train the model first using `make train`")
-    except ImportError:
-        st.info("Install shap for advanced explainability: `pip install shap`")
-    except Exception as e:
-        st.warning(f"Could not load SHAP: {str(e)}")
+        try:
+            import plotly.express as px
+            fig_fi = px.bar(fi_df.head(15), x='importance', y='feature', 
+                           orientation='h', color='importance',
+                           color_continuous_scale='Blues',
+                           title='Top 15 Feature Importance')
+            fig_fi.update_layout(yaxis={'categoryorder':'total ascending'})
+            st.plotly_chart(fig_fi, use_container_width=True)
+        except ImportError:
+            st.bar_chart(fi_df.head(15).set_index('feature')['importance'])
+    else:
+        st.info("Feature importance file not found. Run `python -m src.pipeline` first to generate it.")
     
     # Historical Statistics
     st.subheader("📈 Historical Statistics")
