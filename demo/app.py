@@ -272,27 +272,91 @@ with tab2:
             st.bar_chart(fi_df.head(15).set_index('feature')['importance'])
     
     # SHAP Explainability
-    st.subheader("🔍 Feature Importance Analysis")
-    st.info("Feature importance shows which features the model relies on most for predictions")
-    
-    FI_PATH = ROOT / "outputs" / "feature_importance.csv"
-    if FI_PATH.exists():
-        fi_df = pd.read_csv(FI_PATH)
-        st.write("**Top 15 Most Important Features**")
-        st.dataframe(fi_df.head(15), use_container_width=True)
+    st.subheader("🔍 SHAP Explainability")
+    try:
+        import shap
+        MODEL_PATH = ROOT / "models" / "point_model.joblib"
+        FEATURES_PATH = ROOT / "data" / "processed" / "features_cache.parquet"
+        FI_PATH = ROOT / "outputs" / "feature_importance.csv"
         
-        try:
-            import plotly.express as px
-            fig_fi = px.bar(fi_df.head(15), x='importance', y='feature', 
-                           orientation='h', color='importance',
-                           color_continuous_scale='Blues',
-                           title='Top 15 Feature Importance')
-            fig_fi.update_layout(yaxis={'categoryorder':'total ascending'})
-            st.plotly_chart(fig_fi, use_container_width=True)
-        except ImportError:
-            st.bar_chart(fi_df.head(15).set_index('feature')['importance'])
-    else:
-        st.info("Feature importance file not found. Run `python -m src.pipeline` first to generate it.")
+        if MODEL_PATH.exists():
+            import joblib
+            model = joblib.load(MODEL_PATH)
+            
+            st.info("SHAP (SHapley Additive exPlanations) shows how each feature contributes to individual predictions")
+            
+            # Load expected features from importance file
+            if FI_PATH.exists():
+                fi_df = pd.read_csv(FI_PATH)
+                expected_features = fi_df['feature'].tolist()
+            else:
+                st.warning("Feature importance file not found")
+                expected_features = None
+            
+            # Try to load cached features
+            if FEATURES_PATH.exists():
+                features_df = pd.read_parquet(FEATURES_PATH)
+                
+                # Filter for selected store-item
+                if 'store' in features_df.columns and 'item' in features_df.columns:
+                    sample_features = features_df[
+                        (features_df['store'] == selected_store) & 
+                        (features_df['item'] == selected_item)
+                    ].tail(100)
+                    
+                    if len(sample_features) > 0:
+                        # Get feature columns (exclude target and identifiers)
+                        feature_cols = [col for col in sample_features.columns 
+                                      if col not in ['sales', 'date', 'store', 'item', 'id']]
+                        
+                        # Add missing features if needed
+                        if expected_features:
+                            missing_features = set(expected_features) - set(feature_cols)
+                            if missing_features:
+                                for feat in missing_features:
+                                    sample_features[feat] = 0  # Fill missing with 0
+                                feature_cols = expected_features
+                        
+                        X_sample = sample_features[feature_cols].values
+                        
+                        try:
+                            explainer = shap.TreeExplainer(model)
+                            shap_values = explainer.shap_values(X_sample)
+                            
+                            # SHAP summary plot
+                            st.write("**Feature Contribution Summary**")
+                            fig_shap, ax = plt.subplots(figsize=(12, 8))
+                            shap.summary_plot(shap_values, X_sample, feature_names=feature_cols, plot_type="bar", show=False)
+                            st.pyplot(fig_shap)
+                            plt.close()
+                            
+                            st.write("**Individual Prediction Explanation**")
+                            st.write("Shows how features contributed to a specific prediction")
+                            fig_waterfall, ax = plt.subplots(figsize=(12, 8))
+                            shap.plots.waterfall(shap.Explanation(values=shap_values[0], base_values=explainer.expected_value, data=X_sample[0], feature_names=feature_cols), show=False)
+                            st.pyplot(fig_waterfall)
+                            plt.close()
+                        except Exception as e:
+                            st.warning(f"SHAP analysis error: {str(e)}")
+                            # Fallback to feature importance
+                            if FI_PATH.exists():
+                                fi_df = pd.read_csv(FI_PATH)
+                                st.write("**Top 15 Feature Contributions (from training)**")
+                                st.dataframe(fi_df.head(15), use_container_width=True)
+                else:
+                    st.warning("No feature data found for selected store-item")
+            else:
+                st.info("Feature cache not found. Showing feature importance from training instead.")
+                if FI_PATH.exists():
+                    fi_df = pd.read_csv(FI_PATH)
+                    st.write("**Top 15 Feature Contributions**")
+                    st.dataframe(fi_df.head(15), use_container_width=True)
+        else:
+            st.info("Model not found. Run `python -m src.pipeline` first")
+    except ImportError:
+        st.info("Install shap for advanced explainability: `pip install shap`")
+    except Exception as e:
+        st.warning(f"Could not load SHAP: {str(e)}")
     
     # Historical Statistics
     st.subheader("📈 Historical Statistics")
