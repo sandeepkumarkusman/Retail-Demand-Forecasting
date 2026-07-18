@@ -282,34 +282,18 @@ with tab2:
             model = joblib.load(MODEL_PATH)
             
             st.info("SHAP (SHapley Additive exPlanations) shows how each feature contributes to individual predictions")
+            st.warning("⚠️ SHAP requires the full feature engineering pipeline (47 features). Currently showing feature importance instead.")
             
-            # Create sample data for SHAP
-            if len(hist) > 0:
-                sample_data = hist.tail(100)
-                # Create simple feature set for demonstration
-                feature_cols = ['sales']  # Simplified for demo
-                if all(col in sample_data.columns for col in feature_cols):
-                    X_sample = sample_data[feature_cols].values
-                    
-                    try:
-                        explainer = shap.TreeExplainer(model)
-                        shap_values = explainer.shap_values(X_sample)
-                        
-                        # SHAP summary plot
-                        st.write("**Feature Contribution Summary**")
-                        fig_shap, ax = plt.subplots()
-                        shap.summary_plot(shap_values, X_sample, plot_type="bar", show=False)
-                        st.pyplot(fig_shap)
-                        plt.close()
-                        
-                        st.write("**Individual Prediction Explanation**")
-                        st.write("Shows how features contributed to a specific prediction")
-                        fig_waterfall, ax = plt.subplots()
-                        shap.plots.waterfall(shap.Explanation(values=shap_values[0], base_values=explainer.expected_value, data=X_sample[0]), show=False)
-                        st.pyplot(fig_waterfall)
-                        plt.close()
-                    except Exception as e:
-                        st.warning(f"SHAP analysis requires model training data: {str(e)}")
+            # Show feature importance as alternative
+            FI_PATH = ROOT / "outputs" / "feature_importance.csv"
+            if FI_PATH.exists():
+                fi_df = pd.read_csv(FI_PATH)
+                st.write("**Top 10 Feature Contributions**")
+                st.dataframe(fi_df.head(10), use_container_width=True)
+            else:
+                st.info("Feature importance file not found. Run the pipeline first to generate it.")
+        else:
+            st.info("Model not found. Train the model first using `make train`")
     except ImportError:
         st.info("Install shap for advanced explainability: `pip install shap`")
     except Exception as e:
