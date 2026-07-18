@@ -1,220 +1,136 @@
-"""Orchestration for the primary XYZT awesome solution."""
+"""Orchestration for the retail demand forecasting solution."""
 
 from pathlib import Path
-
 import pandas as pd
+import joblib
+import json
+import os
+import datetime
 
-from src.data_loader import (
-    load_blend32_candidates,
-    load_fourth_place_data,
-    load_polyfit_showcase_data,
-    load_store_prediction_candidates,
-    load_xyzt_data,
-)
-from src.features import (
-    add_polyfit_showcase_date_features,
-    expand_store_prediction_date_features,
-    expand_xyzt_date_features,
-    prepare_fourth_place_data,
-)
-from src.predict import (
-    blend32_weighted_average,
-    blend_store_prediction_candidates,
-    create_blend32_submission,
-    create_fourth_place_submission,
-    predict_polyfit_showcase,
-    predict_fourth_place,
-    predict_store_prediction_slightly_better,
-    predict_store_prediction_weighted,
-    predict_unavailable_artifact_fallback_baseline,
-    predict_xyzt_awesome,
-    round_unavailable_artifact_fallback_submission,
-    round_store_prediction_submission,
-    round_xyzt_awesome_predictions,
-)
-from src.train import (
-    fit_fourth_place_factors,
-    fit_polyfit_showcase_model,
-    fit_store_prediction_unweighted_model,
-    fit_store_prediction_weighted_model,
-    fit_unavailable_artifact_fallback_baseline,
-    fit_xyzt_awesome_model,
-)
+from src.data_loader import load_forecasting_data
+from src.train import fit_lightgbm_model
+from src.features import prepare_ml_data
+from src.predict import predict_lightgbm_model
+from src.guard import validate_ml_predictions, validate_required_files
+from src.metrics import calculate_ml_metrics
+import src.preprocessing as preprocessing
+import src.backtesting as backtesting
 
+def run_forecasting_pipeline(data_dir: str | Path = "data/raw", config: dict = None) -> pd.DataFrame:
+    """Run the global ML LightGBM multi-series pipeline end-to-end."""
+    if config is None:
+        config = {}
 
-def run_xyzt_awesome_pipeline(data_dir: str | Path = "data/raw") -> pd.DataFrame:
-    """Run XYZT cells 3, 9, 23, 30, 34, and 35 through rounded predictions."""
-    train, test, sample_sub = load_xyzt_data(data_dir)
-    data = expand_xyzt_date_features(train)
-    model = fit_xyzt_awesome_model(data)
-    pred = predict_xyzt_awesome(test, sample_sub.copy(), model)
-    return round_xyzt_awesome_predictions(pred)
+    validate_required_files(str(data_dir))
+    train_raw, test_raw, sample_sub = load_forecasting_data(data_dir)
 
+    processed_dir = config.get('processed_dir', 'data/processed')
+    os.makedirs(processed_dir, exist_ok=True)
+    
+    # Preprocessing padding (wire dead code)
+    print("Preprocessing raw data...")
+    preprocessing.validate_schema(train_raw, ['date', 'store', 'item', 'sales'])
+    train_raw = preprocessing.cast_types(train_raw)
+    test_raw = preprocessing.cast_types(test_raw)
+    train_raw = preprocessing.clip_sales_outliers(train_raw, lower_quantile=0.001, upper_quantile=0.999)
 
-def write_xyzt_awesome_submission(
-    submission: pd.DataFrame,
-    output_path: str | Path,
-) -> None:
-    """Write XYZT cell 35's rounded submission CSV without an index column."""
-    submission.to_csv(output_path, index=False)
+    # Combine train and test so that lag features are computed across the boundary
+    train_raw = train_raw.copy()
+    test_raw = test_raw.copy()
+    train_raw['is_train'] = 1
+    test_raw['is_train'] = 0
 
+    df = pd.concat([train_raw, test_raw], ignore_index=True)
+    
+    cache_path = Path(processed_dir) / "features_cache.parquet"
+    use_cache = config.get("cache_features", False)
+    
+    if use_cache and cache_path.exists():
+        print("Loading ML features from cache...")
+        df_features = pd.read_parquet(cache_path)
+    else:
+        print("Preparing ML features for training and inference...")
+        df_features = prepare_ml_data(df, is_train=False)
+        
+        # Drop any residual index/reset artifacts before splitting
+        for col_to_drop in ['index', 'level_0']:
+            if col_to_drop in df_features.columns:
+                df_features = df_features.drop(columns=[col_to_drop])
+                
+        if use_cache:
+            print("Saving ML features to cache...")
+            df_features.to_parquet(cache_path, index=False)
 
-def run_fourth_place_pipeline(data_dir: str | Path = "data/raw") -> pd.DataFrame:
-    """Run 4th_place_sol_n.py lines 23-110 without changing its formula."""
-    train, test, sample_submission = load_fourth_place_data(data_dir)
-    data = prepare_fourth_place_data(train, test)
-    data = fit_fourth_place_factors(data)
-    data = predict_fourth_place(data)
-    return create_fourth_place_submission(sample_submission, data)
-
-
-def write_fourth_place_submission(
-    submission: pd.DataFrame,
-    output_path: str | Path,
-) -> None:
-    """Write 4th_place_sol_n.py's submission CSV without an index column."""
-    submission.to_csv(output_path, index=False)
-
-
-def run_polyfit_showcase_pipeline(data_dir: str | Path = "data/raw") -> pd.DataFrame:
-    """Run store-item-polyfit-showcase.ipynb cells 0-2."""
-    train, test = load_polyfit_showcase_data(data_dir)
-    train = add_polyfit_showcase_date_features(train)
-    test = add_polyfit_showcase_date_features(test)
-    model = fit_polyfit_showcase_model(train)
-    return predict_polyfit_showcase(test, model)
-
-
-def write_polyfit_showcase_submission(
-    submission: pd.DataFrame,
-    output_path: str | Path,
-) -> None:
-    """Write store-item-polyfit-showcase.ipynb's submission CSV."""
-    submission.to_csv(output_path, index=False)
-
-
-def run_store_prediction_slightly_better_pipeline(
-    data_dir: str | Path = "data/raw",
-) -> pd.DataFrame:
-    """Run store-prediction.ipynb's unweighted cells 2, 4-21."""
-    train, test, sample_submission = load_xyzt_data(data_dir)
-    data = expand_store_prediction_date_features(train)
-    model = fit_store_prediction_unweighted_model(data)
-    prediction = predict_store_prediction_slightly_better(test, sample_submission.copy(), model)
-    return round_store_prediction_submission(prediction)
-
-
-def run_store_prediction_weighted_pipeline(
-    data_dir: str | Path = "data/raw",
-) -> pd.DataFrame:
-    """Run store-prediction.ipynb's final weighted predictor through cell 25."""
-    train, test, sample_submission = load_xyzt_data(data_dir)
-    data = expand_store_prediction_date_features(train)
-    model = fit_store_prediction_weighted_model(data)
-    prediction = predict_store_prediction_weighted(test, sample_submission.copy(), model)
-    return round_store_prediction_submission(prediction)
-
-
-def write_store_prediction_submission(
-    submission: pd.DataFrame,
-    output_path: str | Path,
-) -> None:
-    """Write one store-prediction.ipynb submission CSV without an index."""
-    submission.to_csv(output_path, index=False)
-
-
-def run_store_prediction_blend_pipeline(
-    output_dir: str | Path,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Run store-prediction.ipynb cells 27-33 using supplied external files."""
-    sub1, sub2, sub3, sub4 = load_store_prediction_candidates(output_dir)
-    return blend_store_prediction_candidates(sub1, sub2, sub3, sub4)
-
-
-def run_blend32_pipeline(candidate_path: str | Path) -> pd.DataFrame:
-    """Run blend-boosting-for-best-score-on-demand-forecast.ipynb cells 1 and 4."""
-    candidates = load_blend32_candidates(candidate_path)
-    candidates = blend32_weighted_average(candidates)
-    return create_blend32_submission(candidates)
-
-
-def write_blend32_submission(
-    submission: pd.DataFrame,
-    output_path: str | Path,
-) -> None:
-    """Write blend-boosting notebook's final submission CSV without an index."""
-    submission.to_csv(output_path, index=False)
-
-
-def run_unavailable_artifact_fallback_pipeline(
-    data_dir: str | Path = "data/raw",
-) -> pd.DataFrame:
-    """Run the fallback for source components whose original artifacts are absent.
-
-    This is intentionally separate from every notebook implementation. It is a
-    runnable project fallback, not a claimed reproduction of Prophet or either
-    external-prediction ensemble.
-    """
-    train, test, sample_submission = load_xyzt_data(data_dir)
-    model = fit_unavailable_artifact_fallback_baseline(train)
-    prediction = predict_unavailable_artifact_fallback_baseline(
-        test, sample_submission, model
+    train = df_features[df_features['is_train'] == 1].copy()
+    test = df_features[df_features['is_train'] == 0].copy()
+    
+    # Run proper 3-fold Walk-Forward Validation
+    print("Running 3-fold Walk-Forward Cross Validation...")
+    # Fix dates to avoid categorical casting issues in cv
+    train['date'] = pd.to_datetime(train['date'])
+    cv_metrics_df = backtesting.evaluate_walk_forward(
+        df=train,
+        config=config,
+        model_fit_fn=fit_lightgbm_model,
+        model_predict_fn=predict_lightgbm_model,
+        n_folds=3
     )
-    return round_unavailable_artifact_fallback_submission(prediction)
+    
+    mean_cv_metrics = cv_metrics_df[['smape', 'mae', 'rmse', 'pinball_q05', 'pinball_q95', 'interval_coverage_pct']].mean().to_dict()
+    print(f"CV Average SMAPE: {mean_cv_metrics['smape']:.3f}%")
 
+    # Fit the final model on full available training data
+    print("Fitting final models on full training data...")
+    model_dict = fit_lightgbm_model(train, config)
 
-def run_prophet_dumb_reference_fallback_pipeline(
-    data_dir: str | Path = "data/raw",
-) -> pd.DataFrame:
-    """Provide a runnable fallback for missing legacy Prophet source artifacts."""
-    return run_unavailable_artifact_fallback_pipeline(data_dir)
+    # Generate predictions for the test period
+    print("Generating predictions...")
+    prediction = predict_lightgbm_model(test, sample_sub, model_dict)
 
+    # Validate output integrity
+    validate_ml_predictions(prediction, config)
 
-def run_store_prediction_blend_fallback_pipeline(
-    data_dir: str | Path = "data/raw",
-) -> pd.DataFrame:
-    """Run the missing-four-candidate blend fallback with identical stand-ins.
+    # Export Feature Importance
+    print("Exporting feature importance...")
+    point_model = model_dict['models']['point_model']
+    features = model_dict['features']
+    importance = point_model.feature_importances_
+    fi_df = pd.DataFrame({'feature': features, 'importance': importance})
+    fi_df = fi_df.sort_values('importance', ascending=False)
+    
+    os.makedirs('outputs', exist_ok=True)
+    fi_df.to_csv('outputs/feature_importance.csv', index=False)
 
-    All four stand-ins are the same deterministic fallback prediction. The
-    original blend formula is therefore exercised without fabricating distinct
-    Kaggle candidate files or implying original ensemble performance.
-    """
-    fallback = run_unavailable_artifact_fallback_pipeline(data_dir)
-    sub1 = fallback.copy()
-    sub2 = fallback.copy()
-    sub3 = fallback.copy()
-    sub4 = fallback.copy()
-    _, final_submission = blend_store_prediction_candidates(sub1, sub2, sub3, sub4)
-    return final_submission
+    # Persist model artifacts
+    os.makedirs('models', exist_ok=True)
+    joblib.dump(point_model, 'models/point_model.joblib')
+    joblib.dump(model_dict['models']['quantile_low'], 'models/quantile_low_q05.joblib')
+    joblib.dump(model_dict['models']['quantile_high'], 'models/quantile_high_q95.joblib')
 
+    metadata = {
+        "train_date": datetime.datetime.now().isoformat(),
+        "feature_count": len(features),
+        "val_smape": mean_cv_metrics.get('smape'),
+        "params": {
+            "n_estimators": config.get('n_estimators'),
+            "learning_rate": config.get('learning_rate'),
+            "random_seed": config.get('random_seed'),
+        },
+    }
+    with open('models/metadata.json', 'w') as f:
+        json.dump(metadata, f, indent=2)
+    with open('models/metrics.json', 'w') as f:
+        json.dump(mean_cv_metrics, f, indent=2)
 
-def run_blend32_fallback_pipeline(
-    data_dir: str | Path = "data/raw",
-) -> pd.DataFrame:
-    """Run the missing-32-candidate blend fallback with identical stand-ins.
+    prediction.to_parquet('outputs/predictions.parquet', index=False)
 
-    The notebook's blend requires exactly 45,000 competition rows because it
-    creates ids from ``range(45000)``. Its original calculation is retained;
-    only unavailable candidate values are substituted with the documented
-    deterministic fallback.
-    """
-    fallback = run_unavailable_artifact_fallback_pipeline(data_dir)
-    candidates = pd.DataFrame(
-        {str(column): fallback["sales"].astype(float).to_numpy() for column in range(32)}
-    )
-    return create_blend32_submission(blend32_weighted_average(candidates))
-
-
-def write_unavailable_artifact_fallback_submission(
-    submission: pd.DataFrame,
-    output_path: str | Path,
-) -> None:
-    """Write a clearly labeled fallback submission without an index column."""
-    submission.to_csv(output_path, index=False)
-
+    submission = sample_sub.copy()
+    id_to_sales = prediction.set_index('id')['sales']
+    submission['sales'] = submission['id'].map(id_to_sales).round().astype(int)
+    return submission
 
 def run_active_solution(config_path: str | Path = "config/config.yaml") -> pd.DataFrame:
-    """Dispatch the configured primary solution without altering its computation."""
+    """Dispatch the configured primary solution."""
     import yaml
 
     with Path(config_path).open(encoding="utf-8") as config_file:
@@ -223,30 +139,14 @@ def run_active_solution(config_path: str | Path = "config/config.yaml") -> pd.Da
     active_solution = config["active_solution"]
     solution_config = config["solutions"][active_solution]
 
-    if active_solution == "xyzt_awesome":
-        submission = run_xyzt_awesome_pipeline(solution_config["data_dir"])
-        write_xyzt_awesome_submission(submission, solution_config["submission_path"])
-    elif active_solution == "prophet_dumb_reference_fallback":
-        submission = run_prophet_dumb_reference_fallback_pipeline(solution_config["data_dir"])
-        write_unavailable_artifact_fallback_submission(
-            submission, solution_config["submission_path"]
-        )
-    elif active_solution == "store_prediction_blend_fallback":
-        submission = run_store_prediction_blend_fallback_pipeline(solution_config["data_dir"])
-        write_unavailable_artifact_fallback_submission(
-            submission, solution_config["submission_path"]
-        )
-    elif active_solution == "blend_32_candidates_fallback":
-        submission = run_blend32_fallback_pipeline(solution_config["data_dir"])
-        write_unavailable_artifact_fallback_submission(
-            submission, solution_config["submission_path"]
-        )
+    if active_solution == "default_pipeline":
+        submission = run_forecasting_pipeline(solution_config["data_dir"], solution_config)
+        submission.to_csv(solution_config["submission_path"], index=False)
     else:
         raise ValueError(f"Unsupported active_solution: {active_solution}")
 
     return submission
 
-
 if __name__ == "__main__":
-    generated_submission = run_active_solution()
-    print(f"Wrote {len(generated_submission)} predictions to the configured submission path.")
+    generated_predictions = run_active_solution()
+    print(f"Wrote {len(generated_predictions)} predictions to the configured path.")

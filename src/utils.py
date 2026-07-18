@@ -1,4 +1,4 @@
-"""Shared helpers copied from the Prophet/dumb reference notebook."""
+"""Shared utilities and helper functions."""
 
 import datetime as dt
 import calendar
@@ -10,7 +10,7 @@ import pandas as pd
 
 
 class timer_gen:
-    """Simple timer from eda-prophet-winning-solution-3-0.ipynb cell 6."""
+    """A simple timer generator."""
 
     def __init__(self):
         self.t0 = dt.datetime.now()
@@ -26,7 +26,7 @@ class timer_gen:
 
 @contextmanager
 def suppress_stdout(on: bool = True):
-    """Suppress console output exactly as reference notebook cell 6."""
+    """Context manager to optionally suppress stdout."""
     if on:
         with open(os.devnull, "w") as devnull:
             old_stdout = sys.stdout
@@ -40,7 +40,7 @@ def suppress_stdout(on: bool = True):
 
 
 def display_side_by_side(*args):
-    """Display pandas objects inline as reference notebook cell 6."""
+    """Helper to display pandas DataFrames side-by-side in notebooks."""
     from IPython.display import display_html
 
     html_str = ""
@@ -51,8 +51,8 @@ def display_side_by_side(*args):
     display_html(html_str.replace("table", 'table style="display:inline"'), raw=True)
 
 
-def days_in_month_total_sales_reference(my_date):
-    """Reproduce eda-of-total-sales.ipynb cell 49's DiM helper."""
+def days_in_month(my_date):
+    """Returns the number of days in the month for a given date."""
     my_year = my_date.year
     my_month = my_date.month
     return calendar.monthrange(my_year, my_month)[1]

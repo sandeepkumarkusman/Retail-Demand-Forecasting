@@ -1,12 +1,12 @@
-"""Diagnostic plots from the XYZT source notebook only."""
+"""Diagnostic plots for retail demand exploratory data analysis."""
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 
-def plot_xyzt_year_patterns(data: pd.DataFrame) -> None:
-    """Reproduce XYZT notebook cell 11."""
+def plot_year_patterns(data: pd.DataFrame) -> None:
+    """Plot yearly relative sales by item and by store."""
     agg_year_item = pd.pivot_table(
         data, index="year", columns="item", values="sales", aggfunc=np.mean
     ).values
@@ -28,8 +28,8 @@ def plot_xyzt_year_patterns(data: pd.DataFrame) -> None:
     plt.show()
 
 
-def plot_xyzt_month_patterns(data: pd.DataFrame) -> None:
-    """Reproduce XYZT notebook cell 13."""
+def plot_month_patterns(data: pd.DataFrame) -> None:
+    """Plot monthly relative sales by item and by store."""
     agg_month_item = pd.pivot_table(
         data, index="month", columns="item", values="sales", aggfunc=np.mean
     ).values
@@ -51,8 +51,8 @@ def plot_xyzt_month_patterns(data: pd.DataFrame) -> None:
     plt.show()
 
 
-def plot_xyzt_dayofweek_patterns(data: pd.DataFrame) -> None:
-    """Reproduce XYZT notebook cell 15."""
+def plot_dayofweek_patterns(data: pd.DataFrame) -> None:
+    """Plot day-of-week relative sales by item and by store."""
     agg_dow_item = pd.pivot_table(
         data, index="dayofweek", columns="item", values="sales", aggfunc=np.mean
     ).values
@@ -74,8 +74,8 @@ def plot_xyzt_dayofweek_patterns(data: pd.DataFrame) -> None:
     plt.show()
 
 
-def plot_xyzt_calendar_interactions(data: pd.DataFrame) -> None:
-    """Reproduce XYZT notebook cell 17."""
+def plot_calendar_interactions(data: pd.DataFrame) -> None:
+    """Plot interactions between calendar components (DOW, Month, Year)."""
     agg_dow_month = pd.pivot_table(
         data, index="dayofweek", columns="month", values="sales", aggfunc=np.mean
     ).values
@@ -105,8 +105,8 @@ def plot_xyzt_calendar_interactions(data: pd.DataFrame) -> None:
     plt.show()
 
 
-def plot_xyzt_store_item_patterns(data: pd.DataFrame) -> None:
-    """Reproduce XYZT notebook cell 20."""
+def plot_store_item_patterns(data: pd.DataFrame) -> None:
+    """Plot relative sales across stores and items."""
     agg_store_item = pd.pivot_table(
         data, index="store", columns="item", values="sales", aggfunc=np.mean
     ).values

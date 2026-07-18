@@ -1,84 +1,53 @@
-"""Read-only input guards for the primary XYZT solution."""
+"""Read-only input guards and validation for the forecasting solution."""
 
 from pathlib import Path
-
 import pandas as pd
 
 
-XYZT_REQUIRED_FILES = ("train.csv", "test.csv", "sample_submission.csv")
-XYZT_TRAIN_COLUMNS = ("store", "item", "sales")
-XYZT_TEST_COLUMNS = ("id", "store", "item")
-XYZT_SUBMISSION_COLUMNS = ("id", "sales")
+REQUIRED_FILES = ("train.csv", "test.csv", "sample_submission.csv")
 
 
-def validate_xyzt_required_files(data_dir: str | Path = "data/raw") -> None:
-    """Raise when a primary-XYZT raw input file is missing."""
+def validate_required_files(data_dir: str | Path = "data/raw") -> None:
+    """Raise when a raw input file is missing."""
     raw_path = Path(data_dir)
-    missing_files = [filename for filename in XYZT_REQUIRED_FILES if not (raw_path / filename).is_file()]
+    missing_files = [filename for filename in REQUIRED_FILES if not (raw_path / filename).is_file()]
     if missing_files:
         raise FileNotFoundError(
-            "Missing XYZT input file(s) in "
+            "Missing input file(s) in "
             f"{raw_path}: {', '.join(missing_files)}"
         )
 
 
-def _validate_xyzt_frame_schema(
-    frame: pd.DataFrame,
-    *,
-    frame_name: str,
-    expected_columns: tuple[str, ...],
-    requires_date_index: bool,
-) -> None:
-    if not isinstance(frame, pd.DataFrame):
-        raise TypeError(f"{frame_name} must be a pandas DataFrame")
-    if tuple(frame.columns) != expected_columns:
-        raise ValueError(
-            f"{frame_name} columns must be {expected_columns} in that order; "
-            f"received {tuple(frame.columns)}"
-        )
-    if requires_date_index and frame.index.name != "date":
-        raise ValueError(f"{frame_name} index must be named 'date'")
-    if frame.empty:
-        raise ValueError(f"{frame_name} must contain at least one row")
-
-
-def validate_xyzt_data(
-    train: pd.DataFrame,
-    test: pd.DataFrame,
-    sample_submission: pd.DataFrame,
-) -> None:
-    """Validate XYZT input contracts without mutating any provided frame."""
-    _validate_xyzt_frame_schema(
-        train,
-        frame_name="train",
-        expected_columns=XYZT_TRAIN_COLUMNS,
-        requires_date_index=True,
-    )
-    _validate_xyzt_frame_schema(
-        test,
-        frame_name="test",
-        expected_columns=XYZT_TEST_COLUMNS,
-        requires_date_index=True,
-    )
-    _validate_xyzt_frame_schema(
-        sample_submission,
-        frame_name="sample_submission",
-        expected_columns=XYZT_SUBMISSION_COLUMNS,
-        requires_date_index=False,
-    )
-
-    if train.reset_index().duplicated(["date", "store", "item"]).any():
-        raise ValueError("train contains duplicate date/store/item rows")
-    if test.reset_index().duplicated(["date", "store", "item"]).any():
-        raise ValueError("test contains duplicate date/store/item rows")
-    if test["id"].duplicated().any():
-        raise ValueError("test contains duplicate IDs")
-    if sample_submission["id"].duplicated().any():
-        raise ValueError("sample_submission contains duplicate IDs")
-    if len(test) != len(sample_submission):
-        raise ValueError(
-            "test and sample_submission row counts must match; "
-            f"received {len(test)} and {len(sample_submission)}"
-        )
-    if not pd.Index(test["id"]).equals(pd.Index(sample_submission["id"])):
-        raise ValueError("test and sample_submission IDs must match in the same order")
+def validate_ml_predictions(predictions: pd.DataFrame, config: dict = None) -> None:
+    """
+    Validate that the generated ML predictions conform to expected bounds
+    and that quantiles maintain strict ordering: q05 <= point <= q95
+    """
+    if config is None:
+        config = {}
+        
+    required_cols = ['id', 'sales', 'q05', 'q95']
+    for col in required_cols:
+        if col not in predictions.columns:
+            raise ValueError(f"Predictions missing required column: {col}")
+            
+    # Check bounds
+    thresholds = config.get('guard_thresholds', {'min_sales': 0, 'max_sales': 10000})
+    min_sales = thresholds.get('min_sales', 0)
+    max_sales = thresholds.get('max_sales', 10000)
+    
+    if (predictions['sales'] < min_sales).any() or (predictions['sales'] > max_sales).any():
+        raise ValueError(f"Point predictions fall outside acceptable range [{min_sales}, {max_sales}]")
+        
+    # Check Quantile Ordering
+    invalid_lower = predictions[predictions['q05'] > predictions['sales']]
+    if not invalid_lower.empty:
+        raise ValueError(f"Found {len(invalid_lower)} rows where q05 > point prediction")
+        
+    invalid_upper = predictions[predictions['sales'] > predictions['q95']]
+    if not invalid_upper.empty:
+        raise ValueError(f"Found {len(invalid_upper)} rows where point > q95 prediction")
+        
+    invalid_overall = predictions[predictions['q05'] > predictions['q95']]
+    if not invalid_overall.empty:
+        raise ValueError(f"Found {len(invalid_overall)} rows where q05 > q95 prediction")

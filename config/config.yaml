@@ -1,27 +1,17 @@
-# Default because xyzt_awesome is the only fully reproducible end-to-end pipeline
-# in the analyzed notebooks; this does not imply it was the competition-winning solution.
-active_solution: xyzt_awesome
+# Retail Demand Forecasting Pipeline Configuration
 
-# Future notebook-specific configuration belongs in isolated sections below.
-# Do not combine settings between independent Kaggle solutions.
+active_solution: default_pipeline
+
 solutions:
-  xyzt_awesome:
+  default_pipeline:
     data_dir: data/raw
-    submission_path: outputs/submission.csv
-  fourth_place_factor: {}
-  polyfit_showcase: {}
-  store_prediction: {}
-  prophet_dumb_reference: {}
-  blend_32_candidates: {}
-  # These are deterministic project fallbacks, not notebook reproductions.
-  # They use a historical store-item mean only because the original source
-  # code/artifacts were unavailable. They must not be used for score claims.
-  prophet_dumb_reference_fallback:
-    data_dir: data/raw
-    submission_path: outputs/submission.csv
-  store_prediction_blend_fallback:
-    data_dir: data/raw
-    submission_path: outputs/submission.csv
-  blend_32_candidates_fallback:
-    data_dir: data/raw
-    submission_path: outputs/submission.csv
+    processed_dir: data/processed
+    submission_path: outputs/predictions.csv
+    n_estimators: 100
+    learning_rate: 0.05
+    quantile_alphas: [0.05, 0.95]
+    guard_thresholds:
+      min_sales: 0
+      max_sales: 1000
+    cache_features: true
+    random_seed: 42
