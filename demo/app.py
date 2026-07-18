@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import streamlit as st
+import matplotlib.pyplot as plt
 
 # Allow importing from project src
 ROOT = Path(__file__).resolve().parent.parent
@@ -270,6 +271,50 @@ with tab2:
         except ImportError:
             st.bar_chart(fi_df.head(15).set_index('feature')['importance'])
     
+    # SHAP Explainability
+    st.subheader("🔍 SHAP Explainability")
+    try:
+        import shap
+        MODEL_PATH = ROOT / "models" / "point_model.joblib"
+        
+        if MODEL_PATH.exists():
+            import joblib
+            model = joblib.load(MODEL_PATH)
+            
+            st.info("SHAP (SHapley Additive exPlanations) shows how each feature contributes to individual predictions")
+            
+            # Create sample data for SHAP
+            if len(hist) > 0:
+                sample_data = hist.tail(100)
+                # Create simple feature set for demonstration
+                feature_cols = ['sales']  # Simplified for demo
+                if all(col in sample_data.columns for col in feature_cols):
+                    X_sample = sample_data[feature_cols].values
+                    
+                    try:
+                        explainer = shap.TreeExplainer(model)
+                        shap_values = explainer.shap_values(X_sample)
+                        
+                        # SHAP summary plot
+                        st.write("**Feature Contribution Summary**")
+                        fig_shap, ax = plt.subplots()
+                        shap.summary_plot(shap_values, X_sample, plot_type="bar", show=False)
+                        st.pyplot(fig_shap)
+                        plt.close()
+                        
+                        st.write("**Individual Prediction Explanation**")
+                        st.write("Shows how features contributed to a specific prediction")
+                        fig_waterfall, ax = plt.subplots()
+                        shap.plots.waterfall(shap.Explanation(values=shap_values[0], base_values=explainer.expected_value, data=X_sample[0]), show=False)
+                        st.pyplot(fig_waterfall)
+                        plt.close()
+                    except Exception as e:
+                        st.warning(f"SHAP analysis requires model training data: {str(e)}")
+    except ImportError:
+        st.info("Install shap for advanced explainability: `pip install shap`")
+    except Exception as e:
+        st.warning(f"Could not load SHAP: {str(e)}")
+    
     # Historical Statistics
     st.subheader("📈 Historical Statistics")
     hist_stats = hist['sales'].describe()
@@ -493,6 +538,104 @@ with tab4:
             
         except Exception as e:
             st.warning(f"Could not compute per-series performance: {str(e)}")
+    
+    # What-If Scenario Analysis
+    st.subheader("🎯 What-If Scenario Analysis")
+    st.write("Test different business scenarios to understand forecast sensitivity")
+    
+    if forecast is not None and not forecast.empty:
+        scenario_type = st.selectbox("Select Scenario", 
+                                     ["Demand Spike", "Promotion Impact", "Supply Disruption", "Seasonal Shift"])
+        
+        scenario_multiplier = st.slider("Impact (%)", -50, 100, 20, 
+                                       help="Percentage change in demand (negative = decrease, positive = increase)")
+        
+        if st.button("Run Scenario Analysis"):
+            base_forecast = forecast['sales'].copy()
+            adjusted_forecast = base_forecast * (1 + scenario_multiplier / 100)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Base Forecast Mean", f"{base_forecast.mean():.1f}")
+            with col2:
+                st.metric(f"Adjusted Forecast Mean ({scenario_type})", f"{adjusted_forecast.mean():.1f}", 
+                         delta=f"{scenario_multiplier}%")
+            
+            # Plot comparison
+            try:
+                import plotly.graph_objects as go
+                fig_scenario = go.Figure()
+                fig_scenario.add_trace(go.Scatter(
+                    x=forecast['date'],
+                    y=base_forecast,
+                    mode='lines',
+                    name='Base Forecast',
+                    line=dict(color='#6c8ebf', width=2)
+                ))
+                fig_scenario.add_trace(go.Scatter(
+                    x=forecast['date'],
+                    y=adjusted_forecast,
+                    mode='lines',
+                    name=f'{scenario_type} Scenario',
+                    line=dict(color='#e67e22', width=2, dash='dash')
+                ))
+                fig_scenario.update_layout(
+                    title=f'Base Forecast vs {scenario_type} Scenario',
+                    xaxis_title='Date',
+                    yaxis_title='Units Sold',
+                    template='plotly_white',
+                    height=400
+                )
+                st.plotly_chart(fig_scenario, use_container_width=True)
+            except ImportError:
+                st.warning("Install plotly for scenario visualization")
+    
+    # Inventory Optimization
+    st.subheader("📦 Inventory Optimization")
+    st.write("Calculate optimal inventory policies based on forecasts")
+    
+    if len(hist) > 0:
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            lead_time = st.number_input("Lead Time (days)", min_value=1, max_value=90, value=7)
+        with col2:
+            service_level = st.selectbox("Service Level", [0.90, 0.95, 0.99], index=1)
+        with col3:
+            ordering_cost = st.number_input("Ordering Cost ($)", min_value=1, max_value=1000, value=50)
+        
+        holding_cost_pct = st.slider("Holding Cost (%)", 1, 50, 25) / 100
+        
+        if st.button("Calculate Inventory Metrics"):
+            # Calculate parameters
+            avg_daily_demand = hist['sales'].mean()
+            demand_std = hist['sales'].std()
+            annual_demand = avg_daily_demand * 365
+            
+            # Z-score for service level
+            from scipy import stats
+            z_score = stats.norm.ppf(service_level)
+            
+            # Inventory formulas
+            safety_stock = z_score * demand_std * np.sqrt(lead_time)
+            reorder_point = avg_daily_demand * lead_time + safety_stock
+            holding_cost = avg_daily_demand * holding_cost_pct
+            eoq = np.sqrt(2 * annual_demand * ordering_cost / holding_cost)
+            
+            # Display results
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Safety Stock", f"{safety_stock:.1f}")
+            col2.metric("Reorder Point", f"{reorder_point:.1f}")
+            col3.metric("EOQ", f"{eoq:.1f}")
+            col4.metric("Avg Daily Demand", f"{avg_daily_demand:.1f}")
+            
+            st.info(f"""
+            **Inventory Policy for Store {selected_store}, Item {selected_item}:**
+            - **Safety Stock:** {safety_stock:.1f} units (buffer against demand variability)
+            - **Reorder Point:** {reorder_point:.1f} units (trigger replenishment when inventory falls below this level)
+            - **EOQ:** {eoq:.1f} units (optimal order quantity minimizing total costs)
+            - **Service Level:** {service_level*100}% (probability of not stocking out)
+            """)
     
     # Batch Forecasting Interface
     st.subheader("🚀 Batch Forecasting")
