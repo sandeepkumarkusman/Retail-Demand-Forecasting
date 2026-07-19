@@ -128,8 +128,10 @@ Retail-Demand-Forecasting/
 │   ├── train.py           ← LightGBM model fitting & CV
 │   ├── predict.py         ← Inference generation
 │   ├── guard.py           ← Output validation constraints
-│   ├── metrics.py         ← Evaluation (SMAPE, MAE, Pinball Loss, Coverage)
-│   ├── backtesting.py     ← 3-Fold Walk-forward CV framework
+│   ├── metrics.py         ← Evaluation (SMAPE, MAE, RMSE, WAPE, RMSLE, MAPE, R², business metrics)
+│   ├── backtesting.py     ← Configurable Walk-forward CV framework (1-10 windows)
+│   ├── baselines.py       ← Baseline models (Naive, ARIMA, Prophet) for comparison
+│   ├── model_tracking.py  ← Model accuracy tracking and drift detection
 │   ├── explain.py         ← Diagnostic plots and feature importance
 │   ├── pipeline.py        ← End-to-end orchestration
 │   └── utils.py           ← Shared helpers
@@ -152,7 +154,13 @@ Retail-Demand-Forecasting/
 - **True Quantile Regression:** Separate models for Q05 and Q95 prediction intervals
 - **Walk-Forward Cross-Validation:** 3-fold temporal validation respecting time series structure
 - **Global Model Approach:** Single model learns from all 500 series simultaneously
-- **Interactive Dashboard:** Streamlit app for forecast exploration and analysis
+- **Interactive Dashboard:** Streamlit app with 5 tabs for forecast exploration and analysis
+- **Amazon Forecast-style Advanced Features:**
+  - **Configurable Backtest Windows:** Evaluate model accuracy over different start dates (1-10 windows)
+  - **Custom Metrics Evaluation:** 6+ comprehensive metrics (SMAPE, MAE, RMSE, WAPE, RMSLE, MAPE, R²) plus business-specific metrics
+  - **Model Comparison:** Compare LightGBM against baseline models (Naive, ARIMA, Prophet)
+  - **Subset Forecasting:** Forecast only important items to reduce compute costs
+  - **Model Accuracy Tracking:** Track performance over time with automatic drift detection
 - **Comprehensive Testing:** Unit tests for guardrails, metrics, and quantile models
 - **Modular Pipeline:** Clean separation of data loading, feature engineering, training, and prediction
 
