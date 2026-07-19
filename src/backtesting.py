@@ -56,10 +56,14 @@ def evaluate_walk_forward(
     model_fit_fn: Callable,
     model_predict_fn: Callable,
     n_folds: int = 3,
+    fold_size_months: int = 3,
 ) -> pd.DataFrame:
     """
     Run walk-forward CV with caller-supplied fit/predict callables and return
     per-fold SMAPE, MAE, RMSE, and quantile metrics in a summary DataFrame.
+    
+    Amazon Forecast-style: Configurable number of backtest windows to evaluate
+    model accuracy over different start dates.
 
     Parameters
     ----------
@@ -67,11 +71,12 @@ def evaluate_walk_forward(
     config : Configuration dictionary.
     model_fit_fn : Callable (train_df, config) → model_dict
     model_predict_fn : Callable (val_df, sample_sub, model_dict) → DataFrame of predictions
-    n_folds : Number of walk-forward folds.
+    n_folds : Number of walk-forward folds (Amazon Forecast-style configurable).
+    fold_size_months : Width of each validation window in months.
     """
     results = []
     for fold_idx, (train_fold, val_fold) in enumerate(
-        walk_forward_splits(df, n_folds=n_folds)
+        walk_forward_splits(df, n_folds=n_folds, fold_size_months=fold_size_months)
     ):
         model_dict = model_fit_fn(train_fold, config)
         

@@ -36,12 +36,10 @@ pip install -r requirements.txt
 # - sample_submission.csv
 
 # 3. Run the pipeline
-make train
-# Or: python -m src.pipeline
+python -m src.pipeline
 
 # 4. Launch interactive dashboard
-make serve
-# Or: streamlit run demo/app.py
+streamlit run demo/app.py
 ```
 
 ---
@@ -142,7 +140,6 @@ Retail-Demand-Forecasting/
 ├── outputs/               ← predictions.parquet, feature_importance.csv, submission.csv
 ├── tests/                 ← Pytest unit test suite
 ├── demo/app.py            ← Streamlit forecast explorer dashboard
-├── Makefile               ← Task runner
 └── requirements.txt       ← Dependencies
 ```
 
@@ -188,11 +185,7 @@ Ensure the raw Kaggle dataset files are placed in `data/raw/`:
 - `data/raw/sample_submission.csv`
 
 ### 3. Execute the Pipeline
-You can run the end-to-end pipeline (preprocessing → walk-forward CV → final training → inference) using:
-```bash
-make train
-```
-Or run it directly via Python:
+Run the end-to-end pipeline (preprocessing → walk-forward CV → final training → inference):
 ```bash
 python -m src.pipeline
 ```
@@ -200,11 +193,11 @@ python -m src.pipeline
 ### 4. Run Tests & Validation
 Execute the unit test suite to verify module integrity and guardrails:
 ```bash
-make test
+pytest tests/
 ```
 
 ### 5. Explore the Demo
 Launch the interactive Streamlit dashboard to visually explore the forecasts and prediction intervals:
 ```bash
-make serve
+streamlit run demo/app.py
 ```

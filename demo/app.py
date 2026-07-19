@@ -152,7 +152,7 @@ if pred_df is not None and test_df is not None:
 # ──────────────────────────────────────────────
 # Tabs for different views
 # ──────────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs(["📈 Forecast", "📊 Analysis", "🔬 Model Info", "📦 Batch"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Forecast", "📊 Analysis", "🔬 Model Info", "📦 Batch", "⚙️ Advanced"])
 
 with tab1:
     st.header(f"Store {selected_store} · Item {selected_item} — Demand Forecast")
@@ -658,5 +658,198 @@ with tab4:
         else:
             st.warning("Please select at least one store and one item")
 
+with tab5:
+    st.header("⚙️ Advanced Features (Amazon Forecast-style)")
+    
+    # Model Comparison (Amazon Forecast-style)
+    st.subheader("🤖 Model Comparison")
+    st.info("Amazon Forecast-style: Compare model accuracy over different backtest windows and configurations")
+    st.warning("Note: This feature compares the same LightGBM model evaluated on different time periods (backtest windows) to assess stability.")
+    
+    # Configure backtest windows
+    n_windows = st.slider("Number of Backtest Windows", min_value=2, max_value=5, value=3)
+    window_size_months = st.slider("Window Size (months)", min_value=1, max_value=6, value=3)
+    
+    if st.button("Run Backtest Comparison"):
+        try:
+            from src.backtesting import evaluate_walk_forward
+            from src.train import fit_lightgbm_model
+            from src.predict import predict_lightgbm_model
+            from src.features import prepare_ml_data
+            
+            # Prepare data for backtesting
+            backtest_data = hist.copy()
+            backtest_data['id'] = range(len(backtest_data))
+            
+            # Prepare features (this will take a moment)
+            with st.spinner("Preparing features for backtesting..."):
+                backtest_features = prepare_ml_data(backtest_data, is_train=True)
+                backtest_features['id'] = range(len(backtest_features))
+            
+            # Run backtest with configured windows
+            with st.spinner(f"Running {n_windows}-fold backtest..."):
+                backtest_results = evaluate_walk_forward(
+                    backtest_features,
+                    config={},
+                    model_fit_fn=fit_lightgbm_model,
+                    model_predict_fn=predict_lightgbm_model,
+                    n_folds=n_windows,
+                    fold_size_months=window_size_months
+                )
+            
+            if not backtest_results.empty:
+                st.write(f"**Backtest Results ({n_windows} windows, {window_size_months} months each)**")
+                st.dataframe(backtest_results, width='stretch')
+                
+                # Calculate statistics across windows
+                st.subheader("Model Stability Analysis")
+                col1, col2, col3 = st.columns(3)
+                
+                smape_mean = backtest_results['smape'].mean()
+                smape_std = backtest_results['smape'].std()
+                smape_cv = (smape_std / smape_mean) * 100  # Coefficient of variation
+                
+                col1.metric("Mean SMAPE", f"{smape_mean:.2f}%")
+                col2.metric("SMAPE Std Dev", f"{smape_std:.2f}%")
+                col3.metric("Stability (CV)", f"{smape_cv:.1f}%")
+                
+                # Visualize backtest metrics
+                try:
+                    import plotly.express as px
+                    fig_backtest = px.bar(
+                        backtest_results.reset_index(),
+                        x='fold',
+                        y='smape',
+                        title=f'SMAPE by Backtest Window (Window Size: {window_size_months} months)',
+                        labels={'smape': 'SMAPE (%)', 'fold': 'Backtest Window'}
+                    )
+                    st.plotly_chart(fig_backtest, width='stretch')
+                except ImportError:
+                    st.bar_chart(backtest_results['smape'])
+                
+                # Amazon Forecast-style interpretation
+                st.info("Amazon Forecast-style interpretation: Lower coefficient of variation (CV) indicates more stable model performance across different time periods.")
+                
+                if smape_cv < 10:
+                    st.success("✅ Model shows high stability across backtest windows")
+                elif smape_cv < 20:
+                    st.warning("⚠️ Model shows moderate stability - consider monitoring")
+                else:
+                    st.error("❌ Model shows high variability - may need retraining")
+                    
+        except Exception as e:
+            st.warning(f"Backtest comparison error: {str(e)}")
+    
+    # Model Accuracy Tracking
+    st.subheader("📈 Model Accuracy Tracking")
+    st.info("Track model performance over time to detect drift")
+    
+    try:
+        from src.model_tracking import ModelAccuracyTracker
+        tracker = ModelAccuracyTracker()
+        
+        # Record current metrics
+        if METRICS_PATH.exists():
+            import json
+            with open(METRICS_PATH) as f:
+                current_metrics = json.load(f)
+            
+            if st.button("Record Current Training Run"):
+                tracker.record_training_run(
+                    current_metrics,
+                    model_version="1.0.0",
+                    notes="Manual recording from dashboard"
+                )
+                st.success("Training run recorded!")
+        
+        # Display accuracy trend
+        accuracy_trend = tracker.get_accuracy_trend('smape')
+        if not accuracy_trend.empty:
+            st.write("**SMAPE Trend Over Time**")
+            try:
+                import plotly.express as px
+                fig_trend = px.line(
+                    accuracy_trend,
+                    x='timestamp',
+                    y='smape',
+                    markers=True,
+                    title='Model Accuracy Trend (SMAPE)'
+                )
+                st.plotly_chart(fig_trend, use_container_width=True)
+            except ImportError:
+                st.line_chart(accuracy_trend.set_index('timestamp')['smape'])
+            
+            # Drift detection
+            drift_result = tracker.detect_drift(metric='smape', threshold=0.15)
+            if drift_result['drift_detected']:
+                st.error(f"⚠️ Model drift detected! SMAPE changed by {drift_result['percentage_change']:.1f}%")
+            else:
+                st.success(f"✅ No model drift detected (change: {drift_result.get('percentage_change', 0):.1f}%)")
+        
+        # Summary
+        summary = tracker.get_summary()
+        st.write(f"**Total Training Runs:** {summary['total_runs']}")
+    except Exception as e:
+        st.warning(f"Accuracy tracking error: {str(e)}")
+    
+    
+    # Subset Forecasting
+    st.subheader("🎯 Subset Forecasting")
+    st.info("Amazon Forecast-style: Forecast only important items to reduce compute costs")
+    
+    top_n = st.slider("Number of Top Items to Forecast", min_value=10, max_value=500, value=100)
+    importance_metric = st.selectbox(
+        "Importance Metric",
+        ["total_sales", "avg_sales", "variance"],
+        index=0
+    )
+    
+    if st.button("Identify Important Items"):
+        try:
+            from src.model_tracking import subset_forecast_by_importance
+            
+            filtered_df, top_items = subset_forecast_by_importance(
+                train_df,
+                top_n=top_n,
+                importance_metric=importance_metric
+            )
+            
+            st.write(f"**Top {top_n} Important Items (by {importance_metric})**")
+            st.dataframe(top_items, use_container_width=True)
+            
+            st.info(f"Reduced from {len(train_df)} rows to {len(filtered_df)} rows ({len(filtered_df)/len(train_df)*100:.1f}% of data)")
+        except Exception as e:
+            st.warning(f"Subset forecasting error: {str(e)}")
+    
+    # Custom Metrics
+    st.subheader("📊 Custom Business Metrics")
+    st.info("Amazon Forecast-style: Evaluate with business-specific metrics")
+    
+    business_metric = st.selectbox(
+        "Business Metric",
+        ["stockout_cost", "holding_cost", "total_cost", "revenue_loss", "service_level"],
+        index=0
+    )
+    
+    if st.button("Calculate Business Metric"):
+        try:
+            from src.metrics import calculate_business_metric
+            
+            if forecast is not None and len(hist) > 0:
+                # Use recent historical data for comparison
+                recent_hist = hist.tail(90)
+                if len(forecast) >= 90:
+                    recent_forecast = forecast.head(90)
+                    
+                    business_value = calculate_business_metric(
+                        recent_hist['sales'].values,
+                        recent_forecast['sales'].values,
+                        metric_type=business_metric
+                    )
+                    
+                    st.metric(f"{business_metric.replace('_', ' ').title()}", f"{business_value:,.2f}")
+        except Exception as e:
+            st.warning(f"Business metric calculation error: {str(e)}")
+
 st.markdown("---")
-st.caption("Built with LightGBM · SMAPE-optimised · Q5/Q95 quantile regression bounds · Walk-Forward CV")
+st.caption("Built with LightGBM · SMAPE-optimised · Q5/Q95 quantile regression bounds · Walk-Forward CV · Amazon Forecast-style features")

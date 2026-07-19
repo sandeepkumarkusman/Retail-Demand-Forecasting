@@ -1,0 +1,38 @@
+{
+  "runs": [
+    {
+      "timestamp": "2026-07-18T19:48:59.576362",
+      "model_version": "1.0.0",
+      "metrics": {
+        "smape": 11.678051725393834,
+        "mae": 6.4031616024628875,
+        "rmse": 8.31534664536445,
+        "pinball_q05": 0.9222953511070687,
+        "pinball_q95": 0.8886738598812096,
+        "interval_coverage_pct": 90.71231884057971
+      },
+      "notes": "Manual recording from dashboard"
+    },
+    {
+      "timestamp": "2026-07-19T17:16:00.662185",
+      "model_version": "1.0.0",
+      "metrics": {
+        "smape": 11.678051725393834,
+        "mae": 6.4031616024628875,
+        "rmse": 8.31534664536445,
+        "pinball_q05": 0.9222953511070687,
+        "pinball_q95": 0.8886738598812096,
+        "interval_coverage_pct": 90.71231884057971
+      },
+      "notes": "Manual recording from dashboard"
+    }
+  ],
+  "baseline_metrics": {
+    "smape": 11.678051725393834,
+    "mae": 6.4031616024628875,
+    "rmse": 8.31534664536445,
+    "pinball_q05": 0.9222953511070687,
+    "pinball_q95": 0.8886738598812096,
+    "interval_coverage_pct": 90.71231884057971
+  }
+}
