@@ -4,6 +4,27 @@ A comprehensive machine learning project to forecast daily store-item sales acro
 
 **Performance:** SMAPE 11.6% on 3-fold Walk-Forward Cross-Validation
 
+> 🚀 **Live Interactive Demo:**  
+> Explore the deployed Streamlit application without any local installation:  
+> **https://retail-demand-forecasting-twhuj7dappnnnekvwvpdtav.streamlit.app/**
+>
+> **Features available in the live demo:**
+> - 📈 Interactive demand forecast visualization
+> - 🏪 Store and item-level forecasting explorer
+> - 📊 Historical sales trends and future predictions
+> - 📉 Prediction intervals (Q05–Q95)
+> - 🔍 Feature importance and model insights
+> - ⚡ Powered by the production LightGBM forecasting pipeline
+
+This repository documents the entire journey from initial data exploration and baseline modeling to a production-grade machine learning pipeline. It demonstrates how to handle a complex multi-series time-series forecasting problem by capturing both series-specific dynamics and shared temporal structures.
+
+---
+# End-to-End Retail Demand Forecasting
+
+A comprehensive machine learning project to forecast daily store-item sales across a multi-series dataset.
+
+**Performance:** SMAPE 11.6% on 3-fold Walk-Forward Cross-Validation
+
 This repository documents the entire journey from initial data exploration and baseline modeling to a production-grade machine learning pipeline. It demonstrates how to handle a complex multi-series time-series forecasting problem by capturing both series-specific dynamics and shared temporal structures.
 
 ---
