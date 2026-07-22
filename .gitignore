@@ -8,5 +8,5 @@ __pycache__/
 data/raw/*.csv
 data/processed/*
 data/external/*
-models/*
+models/*.joblib
 logs/*
