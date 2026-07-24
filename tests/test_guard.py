@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 
-from src.guard import validate_required_files, validate_ml_predictions
+from src.guard import validate_ml_predictions, validate_required_files
 
 
 class TestGuard(unittest.TestCase):

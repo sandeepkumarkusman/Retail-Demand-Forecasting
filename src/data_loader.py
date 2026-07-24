@@ -1,6 +1,7 @@
 """Data loading for the retail demand forecasting solution."""
 
 from pathlib import Path
+
 import pandas as pd
 
 

@@ -1,6 +1,7 @@
 """Read-only input guards and validation for the forecasting solution."""
 
 from pathlib import Path
+
 import pandas as pd
 
 REQUIRED_FILES = ("train.csv", "test.csv", "sample_submission.csv")

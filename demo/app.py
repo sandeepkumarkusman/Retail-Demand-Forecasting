@@ -7,10 +7,10 @@ import os
 import sys
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
 
 # Allow importing from project src
 ROOT = Path(__file__).resolve().parent.parent
@@ -779,9 +779,9 @@ with tab5:
     if st.button("Run Backtest Comparison"):
         try:
             from src.backtesting import evaluate_walk_forward
-            from src.train import fit_lightgbm_model
-            from src.predict import predict_lightgbm_model
             from src.features import prepare_ml_data
+            from src.predict import predict_lightgbm_model
+            from src.train import fit_lightgbm_model
 
             # Prepare data for backtesting
             backtest_data = hist.copy()

@@ -1,9 +1,10 @@
 """Baseline models for comparison with LightGBM (Amazon Forecast-style model comparison)."""
 
+import warnings
+from typing import Any, Dict
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any
-import warnings
 
 warnings.filterwarnings("ignore")
 

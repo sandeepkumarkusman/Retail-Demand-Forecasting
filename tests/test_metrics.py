@@ -1,6 +1,7 @@
 """Tests for evaluation metrics."""
 
 import unittest
+
 import numpy as np
 
 from src.metrics import calculate_ml_metrics

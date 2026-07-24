@@ -1,7 +1,7 @@
 """Walk-forward cross-validation utilities for time-series evaluation."""
 
 from pathlib import Path
-from typing import Generator, Callable, Dict, Any
+from typing import Any, Callable, Dict, Generator
 
 import numpy as np
 import pandas as pd

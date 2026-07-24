@@ -1,6 +1,7 @@
 """Evaluation metrics for the forecasting solution."""
 
-from typing import Union, Optional, Callable
+from typing import Callable, Optional, Union
+
 import numpy as np
 import pandas as pd
 

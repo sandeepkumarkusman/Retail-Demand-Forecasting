@@ -1,8 +1,9 @@
 """Training components for the LightGBM forecasting solution."""
 
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
+
 from src.features import prepare_ml_data
 
 

@@ -3,12 +3,9 @@
 import numpy as np
 import pandas as pd
 import pytest
-from src.features import (
-    prepare_ml_data,
-    expand_ml_date_features,
-    add_lag_and_rolling_features,
-    add_target_encoding,
-)
+
+from src.features import (add_lag_and_rolling_features, add_target_encoding,
+                          expand_ml_date_features, prepare_ml_data)
 
 
 def test_lag_features_no_leakage():

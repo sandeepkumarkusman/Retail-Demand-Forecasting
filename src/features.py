@@ -1,7 +1,7 @@
 """Feature creation for the forecasting solution."""
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from pandas.tseries.holiday import USFederalHolidayCalendar
 
 

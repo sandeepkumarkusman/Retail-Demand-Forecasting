@@ -1,8 +1,9 @@
 """Tests for quantile model ordering and validity."""
 
+import unittest
+
 import numpy as np
 import pandas as pd
-import unittest
 
 
 def _make_sample_predictions(n=100):

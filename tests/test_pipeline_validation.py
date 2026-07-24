@@ -1,11 +1,12 @@
 """Tests for pipeline validation and reproducibility."""
 
+import shutil
+import tempfile
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
-import tempfile
-import shutil
-from pathlib import Path
 
 
 def test_pipeline_reproducibility():
