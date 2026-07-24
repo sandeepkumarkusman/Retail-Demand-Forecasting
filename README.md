@@ -222,3 +222,80 @@ Launch the interactive Streamlit dashboard to visually explore the forecasts and
 ```bash
 streamlit run demo/app.py
 ```
+
+---
+
+## 🐳 Docker Deployment
+
+### Using Docker Compose (Recommended)
+```bash
+# Build and run the training pipeline
+docker-compose run trainer
+
+# Run the Streamlit demo app
+docker-compose up demo
+```
+
+### Using Docker Directly
+```bash
+# Build the trainer image
+docker build -t retail-demand-forecasting:trainer --target trainer .
+
+# Build the demo image
+docker build -t retail-demand-forecasting:demo --target demo .
+
+# Run the training pipeline
+docker run -v $(pwd)/data:/app/data retail-demand-forecasting:trainer
+
+# Run the demo app
+docker run -p 8501:8501 -v $(pwd)/data:/app/data retail-demand-forecasting:demo
+```
+
+---
+
+## 🔧 CI/CD Pipeline
+
+This project includes a comprehensive GitHub Actions CI/CD pipeline that automates:
+
+### Pipeline Stages
+1. **Code Quality & Linting**
+   - Black code formatting
+   - isort import sorting
+   - flake8 linting
+
+2. **Testing**
+   - Pytest unit tests with coverage reporting
+   - Tests for feature engineering, preprocessing, guardrails, and metrics
+
+3. **Security Scanning**
+   - Bandit Python security vulnerability scanning
+   - Trivy Docker image vulnerability scanning
+   - CodeQL security analysis
+
+4. **Docker Build**
+   - Multi-stage Docker builds for trainer and demo images
+   - Push to GitHub Container Registry (ghcr.io)
+   - Build caching for faster iterations
+
+5. **Integration Testing**
+   - Docker image validation
+   - End-to-end pipeline testing
+
+6. **Deployment**
+   - Automatic deployment to production on main branch pushes
+   - Environment protection rules
+   - Deployment notifications
+
+### Benefits
+- **Automated Quality Gates**: Code must pass all checks before deployment
+- **Security First**: Automated vulnerability scanning at multiple levels
+- **Reproducibility**: Docker containers ensure consistent environments
+- **Version Control**: All images tagged with commit SHAs for rollback capability
+- **Zero Manual Steps**: Everything runs automatically on git push
+
+### Workflow Triggers
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop` branches
+- Manual workflow dispatch
+
+---
