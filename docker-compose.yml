@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Training pipeline service
+  trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: trainer
+    container_name: retail-demand-trainer
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python -m src.pipeline
+    profiles:
+      - train
+
+  # Streamlit demo app service
+  demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: demo
+    container_name: retail-demand-demo
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - demo
+
+  # Full stack service (both training and demo)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: retail-demand-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: streamlit run demo/app.py --server.port=8501 --server.address=0.0.0.0
+    restart: unless-stopped
+
+volumes:
+  data:
+  models:
+  outputs:
+  logs:

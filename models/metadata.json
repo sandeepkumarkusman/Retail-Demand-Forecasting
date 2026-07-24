@@ -1,0 +1,10 @@
+{
+  "train_date": "2026-07-18T20:07:28.258408",
+  "feature_count": 57,
+  "val_smape": 11.678051725393834,
+  "params": {
+    "n_estimators": 100,
+    "learning_rate": 0.05,
+    "random_seed": 42
+  }
+}
