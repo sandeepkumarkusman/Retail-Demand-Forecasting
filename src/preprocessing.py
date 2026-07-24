@@ -43,7 +43,8 @@ def clip_sales_outliers(
     train_mask = df["sales"].notna()
     lo = df.loc[train_mask, "sales"].quantile(lower_quantile)
     hi = df.loc[train_mask, "sales"].quantile(upper_quantile)
-    df.loc[train_mask, "sales"] = df.loc[train_mask, "sales"].clip(lo, hi)
+    clipped_values = df.loc[train_mask, "sales"].clip(lo, hi)
+    df.loc[train_mask, "sales"] = clipped_values.astype(df["sales"].dtype)
     return df
 
 

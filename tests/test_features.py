@@ -33,7 +33,7 @@ def test_lag_features_no_leakage():
 
     # Check that non-NaN lag_91 values equal sales shifted by 91
     valid_mask = ~df_featured["sales_lag_91"].isna()
-    expected = df.loc[valid_mask.index, "sales"].values
+    expected = df.loc[valid_mask.index - 91, "sales"].values
     actual = df_featured.loc[valid_mask, "sales_lag_91"].values
     np.testing.assert_array_equal(expected, actual)
 
@@ -70,6 +70,10 @@ def test_target_encoding_no_leakage():
             "is_train": [1] * 150 + [0] * 50,  # Last 50 are test
         }
     )
+
+    # Add date features needed for target encoding
+    df["month"] = df["date"].dt.month
+    df["dayofweek"] = df["date"].dt.dayofweek
 
     df_featured = add_target_encoding(df)
 
