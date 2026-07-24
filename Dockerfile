@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for Retail Demand Forecasting
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -31,11 +31,11 @@ COPY . .
 RUN mkdir -p data/raw data/processed models outputs logs
 
 # Stage 1: Training pipeline
-FROM base as trainer
+FROM base AS trainer
 CMD ["python", "-m", "src.pipeline"]
 
 # Stage 2: Streamlit demo app
-FROM base as demo
+FROM base AS demo
 EXPOSE 8501
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8501/_stcore/health || exit 1
