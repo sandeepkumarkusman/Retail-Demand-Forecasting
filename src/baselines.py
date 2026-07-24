@@ -24,9 +24,7 @@ except ImportError:
     PROPHET_AVAILABLE = False
 
 
-def fit_arima_baseline(
-    train_df: pd.DataFrame, config: Dict[str, Any] = None
-) -> Dict[str, Any]:
+def fit_arima_baseline(train_df: pd.DataFrame, config: Dict[str, Any] = None) -> Dict[str, Any]:
     """
     Fit ARIMA baseline model (Amazon Forecast-style statistical baseline).
 
@@ -62,9 +60,7 @@ def fit_arima_baseline(
         return {"model": None, "error": str(e)}
 
 
-def predict_arima_baseline(
-    val_df: pd.DataFrame, model_dict: Dict[str, Any]
-) -> pd.DataFrame:
+def predict_arima_baseline(val_df: pd.DataFrame, model_dict: Dict[str, Any]) -> pd.DataFrame:
     """Generate predictions from ARIMA baseline model."""
     if model_dict.get("model") is None:
         return pd.DataFrame()
@@ -88,9 +84,7 @@ def predict_arima_baseline(
     return pred_df
 
 
-def fit_prophet_baseline(
-    train_df: pd.DataFrame, config: Dict[str, Any] = None
-) -> Dict[str, Any]:
+def fit_prophet_baseline(train_df: pd.DataFrame, config: Dict[str, Any] = None) -> Dict[str, Any]:
     """
     Fit Prophet baseline model (Amazon Forecast-style baseline).
 
@@ -132,9 +126,7 @@ def fit_prophet_baseline(
         return {"model": None, "error": str(e)}
 
 
-def predict_prophet_baseline(
-    val_df: pd.DataFrame, model_dict: Dict[str, Any]
-) -> pd.DataFrame:
+def predict_prophet_baseline(val_df: pd.DataFrame, model_dict: Dict[str, Any]) -> pd.DataFrame:
     """Generate predictions from Prophet baseline model."""
     if model_dict.get("model") is None:
         return pd.DataFrame()
@@ -168,9 +160,7 @@ def predict_prophet_baseline(
     return pred_df
 
 
-def fit_naive_baseline(
-    train_df: pd.DataFrame, config: Dict[str, Any] = None
-) -> Dict[str, Any]:
+def fit_naive_baseline(train_df: pd.DataFrame, config: Dict[str, Any] = None) -> Dict[str, Any]:
     """
     Fit naive baseline (last value repeated).
 
@@ -195,9 +185,7 @@ def fit_naive_baseline(
     }
 
 
-def predict_naive_baseline(
-    val_df: pd.DataFrame, model_dict: Dict[str, Any]
-) -> pd.DataFrame:
+def predict_naive_baseline(val_df: pd.DataFrame, model_dict: Dict[str, Any]) -> pd.DataFrame:
     """Generate predictions from naive baseline model."""
     last_value = model_dict["model"]["last_value"]
     n_steps = len(val_df)
@@ -231,11 +219,7 @@ def compare_models(
         lightgbm_pred = lightgbm_predict_fn(val_df, val_df[["id"]], lightgbm_model_dict)
         merged = val_df[["id", "sales"]].merge(lightgbm_pred, on="id")
         y_true = merged["sales"].values
-        y_pred = (
-            merged["sales_y"].values
-            if "sales_y" in merged.columns
-            else merged["sales"].values
-        )
+        y_pred = merged["sales_y"].values if "sales_y" in merged.columns else merged["sales"].values
         y_q05 = merged["q05"].values if "q05" in merged.columns else None
         y_q95 = merged["q95"].values if "q95" in merged.columns else None
 
@@ -251,11 +235,7 @@ def compare_models(
         naive_pred = predict_naive_baseline(val_df, naive_model)
         merged = val_df[["id", "sales"]].merge(naive_pred, on="id")
         y_true = merged["sales"].values
-        y_pred = (
-            merged["sales_y"].values
-            if "sales_y" in merged.columns
-            else merged["sales"].values
-        )
+        y_pred = merged["sales_y"].values if "sales_y" in merged.columns else merged["sales"].values
         y_q05 = merged["q05"].values if "q05" in merged.columns else None
         y_q95 = merged["q95"].values if "q95" in merged.columns else None
 
@@ -273,11 +253,7 @@ def compare_models(
             if len(arima_pred) > 0:
                 merged = val_df[["id", "sales"]].merge(arima_pred, on="id")
                 y_true = merged["sales"].values
-                y_pred = (
-                    merged["sales_y"].values
-                    if "sales_y" in merged.columns
-                    else merged["sales"].values
-                )
+                y_pred = merged["sales_y"].values if "sales_y" in merged.columns else merged["sales"].values
                 y_q05 = merged["q05"].values if "q05" in merged.columns else None
                 y_q95 = merged["q95"].values if "q95" in merged.columns else None
 
@@ -295,11 +271,7 @@ def compare_models(
             if len(prophet_pred) > 0:
                 merged = val_df[["id", "sales"]].merge(prophet_pred, on="id")
                 y_true = merged["sales"].values
-                y_pred = (
-                    merged["sales_y"].values
-                    if "sales_y" in merged.columns
-                    else merged["sales"].values
-                )
+                y_pred = merged["sales_y"].values if "sales_y" in merged.columns else merged["sales"].values
                 y_q05 = merged["q05"].values if "q05" in merged.columns else None
                 y_q95 = merged["q95"].values if "q95" in merged.columns else None
 

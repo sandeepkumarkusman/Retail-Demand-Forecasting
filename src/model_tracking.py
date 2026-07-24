@@ -48,9 +48,7 @@ class ModelAccuracyTracker:
         with open(self.tracking_file, "w") as f:
             json.dump(self.history, f, indent=2, default=str)
 
-    def record_training_run(
-        self, metrics: Dict[str, float], model_version: str = "1.0.0", notes: str = ""
-    ):
+    def record_training_run(self, metrics: Dict[str, float], model_version: str = "1.0.0", notes: str = ""):
         """
         Record a training run with its metrics.
 
@@ -112,9 +110,7 @@ class ModelAccuracyTracker:
 
         return df
 
-    def detect_drift(
-        self, metric: str = "smape", threshold: float = 0.15, window_size: int = 5
-    ) -> Dict[str, Any]:
+    def detect_drift(self, metric: str = "smape", threshold: float = 0.15, window_size: int = 5) -> Dict[str, Any]:
         """
         Detect model drift by comparing recent performance to baseline.
 
@@ -149,11 +145,7 @@ class ModelAccuracyTracker:
 
         # Calculate average of recent runs
         recent_runs = self.history["runs"][-window_size:]
-        recent_values = [
-            run["metrics"].get(metric)
-            for run in recent_runs
-            if metric in run["metrics"]
-        ]
+        recent_values = [run["metrics"].get(metric) for run in recent_runs if metric in run["metrics"]]
 
         if not recent_values:
             return {
@@ -194,9 +186,7 @@ class ModelAccuracyTracker:
         }
 
 
-def subset_forecast_by_importance(
-    df: pd.DataFrame, top_n: int = 100, importance_metric: str = "total_sales"
-) -> pd.DataFrame:
+def subset_forecast_by_importance(df: pd.DataFrame, top_n: int = 100, importance_metric: str = "total_sales") -> pd.DataFrame:
     """
     Filter to forecast only important items (Amazon Forecast-style subset forecasting).
 
@@ -243,8 +233,6 @@ def subset_forecast_by_importance(
         raise ValueError(f"Unknown importance metric: {importance_metric}")
 
     # Filter original dataframe to only top items
-    filtered_df = df.merge(
-        top_items[["store", "item"]], on=["store", "item"], how="inner"
-    )
+    filtered_df = df.merge(top_items[["store", "item"]], on=["store", "item"], how="inner")
 
     return filtered_df, top_items

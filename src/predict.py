@@ -4,9 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def predict_lightgbm_model(
-    test: pd.DataFrame, sample_submission: pd.DataFrame, model_dict: dict[str, object]
-) -> pd.DataFrame:
+def predict_lightgbm_model(test: pd.DataFrame, sample_submission: pd.DataFrame, model_dict: dict[str, object]) -> pd.DataFrame:
     """
     Generate Point, Q05, and Q95 predictions using the multi-model dictionary.
     """

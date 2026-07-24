@@ -18,9 +18,7 @@ from src.predict import predict_lightgbm_model
 from src.train import fit_lightgbm_model
 
 
-def run_forecasting_pipeline(
-    data_dir: str | Path = "data/raw", config: dict = None
-) -> pd.DataFrame:
+def run_forecasting_pipeline(data_dir: str | Path = "data/raw", config: dict = None) -> pd.DataFrame:
     """Run the global ML LightGBM multi-series pipeline end-to-end."""
     if config is None:
         config = {}
@@ -36,9 +34,7 @@ def run_forecasting_pipeline(
     preprocessing.validate_schema(train_raw, ["date", "store", "item", "sales"])
     train_raw = preprocessing.cast_types(train_raw)
     test_raw = preprocessing.cast_types(test_raw)
-    train_raw = preprocessing.clip_sales_outliers(
-        train_raw, lower_quantile=0.001, upper_quantile=0.999
-    )
+    train_raw = preprocessing.clip_sales_outliers(train_raw, lower_quantile=0.001, upper_quantile=0.999)
 
     # Combine train and test so that lag features are computed across the boundary
     train_raw = train_raw.copy()
@@ -124,9 +120,7 @@ def run_forecasting_pipeline(
     os.makedirs("models", exist_ok=True)
     joblib.dump(point_model, "models/point_model.joblib")
     joblib.dump(model_dict["models"]["quantile_low"], "models/quantile_low_q05.joblib")
-    joblib.dump(
-        model_dict["models"]["quantile_high"], "models/quantile_high_q95.joblib"
-    )
+    joblib.dump(model_dict["models"]["quantile_high"], "models/quantile_high_q95.joblib")
 
     metadata = {
         "train_date": datetime.datetime.now().isoformat(),
@@ -162,9 +156,7 @@ def run_active_solution(config_path: str | Path = "config/config.yaml") -> pd.Da
     solution_config = config["solutions"][active_solution]
 
     if active_solution == "default_pipeline":
-        submission = run_forecasting_pipeline(
-            solution_config["data_dir"], solution_config
-        )
+        submission = run_forecasting_pipeline(solution_config["data_dir"], solution_config)
         submission.to_csv(solution_config["submission_path"], index=False)
     else:
         raise ValueError(f"Unsupported active_solution: {active_solution}")

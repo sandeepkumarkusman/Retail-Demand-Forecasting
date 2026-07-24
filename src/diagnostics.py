@@ -24,9 +24,7 @@ def analyze_feature_stability(
         DataFrame with stability metrics for each feature
     """
     # Combine all fold data
-    combined = pd.concat(
-        feature_importance_dfs, keys=range(len(feature_importance_dfs))
-    )
+    combined = pd.concat(feature_importance_dfs, keys=range(len(feature_importance_dfs)))
 
     stability_scores = {}
     for feature in combined["feature"].unique():
@@ -36,22 +34,14 @@ def analyze_feature_stability(
             "std_importance": feature_data.std(),
             "min_importance": feature_data.min(),
             "max_importance": feature_data.max(),
-            "cv": (
-                feature_data.std() / feature_data.mean()
-                if feature_data.mean() > 0
-                else 0
-            ),
+            "cv": (feature_data.std() / feature_data.mean() if feature_data.mean() > 0 else 0),
             "num_folds": len(feature_data),
         }
 
-    return pd.DataFrame(stability_scores).T.sort_values(
-        "mean_importance", ascending=False
-    )
+    return pd.DataFrame(stability_scores).T.sort_values("mean_importance", ascending=False)
 
 
-def analyze_per_series_performance(
-    predictions: pd.DataFrame, actual: pd.DataFrame
-) -> pd.DataFrame:
+def analyze_per_series_performance(predictions: pd.DataFrame, actual: pd.DataFrame) -> pd.DataFrame:
     """
     Analyze performance by store and item combinations.
 
@@ -72,9 +62,7 @@ def analyze_per_series_performance(
     results = []
 
     # Merge predictions with actuals
-    merged = predictions.merge(
-        actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual")
-    )
+    merged = predictions.merge(actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual"))
 
     for store in merged["store"].unique():
         for item in merged["item"].unique():
@@ -130,9 +118,7 @@ def residual_analysis(actual: np.ndarray, predicted: np.ndarray) -> Dict[str, fl
     }
 
 
-def analyze_temporal_errors(
-    predictions: pd.DataFrame, actual: pd.DataFrame
-) -> pd.DataFrame:
+def analyze_temporal_errors(predictions: pd.DataFrame, actual: pd.DataFrame) -> pd.DataFrame:
     """
     Analyze how errors vary by time periods (day of week, month, etc.).
 
@@ -151,9 +137,7 @@ def analyze_temporal_errors(
     from src.metrics import calculate_ml_metrics
 
     # Merge predictions with actuals
-    merged = predictions.merge(
-        actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual")
-    )
+    merged = predictions.merge(actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual"))
     merged["date"] = pd.to_datetime(merged["date"])
 
     results = []
@@ -189,9 +173,7 @@ def analyze_temporal_errors(
     return pd.DataFrame(results)
 
 
-def analyze_forecast_bias(
-    predictions: pd.DataFrame, actual: pd.DataFrame
-) -> Dict[str, float]:
+def analyze_forecast_bias(predictions: pd.DataFrame, actual: pd.DataFrame) -> Dict[str, float]:
     """
     Analyze systematic bias in forecasts.
 
@@ -208,16 +190,12 @@ def analyze_forecast_bias(
         Bias analysis metrics
     """
     # Merge predictions with actuals
-    merged = predictions.merge(
-        actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual")
-    )
+    merged = predictions.merge(actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual"))
 
     residuals = merged["sales_actual"] - merged["sales_pred"]
 
     # Percentage bias
-    pct_errors = (merged["sales_actual"] - merged["sales_pred"]) / merged[
-        "sales_actual"
-    ]
+    pct_errors = (merged["sales_actual"] - merged["sales_pred"]) / merged["sales_actual"]
     pct_errors = pct_errors.replace([np.inf, -np.inf], np.nan).dropna()
 
     return {
@@ -230,9 +208,7 @@ def analyze_forecast_bias(
     }
 
 
-def analyze_interval_calibration(
-    predictions: pd.DataFrame, actual: pd.DataFrame
-) -> Dict[str, float]:
+def analyze_interval_calibration(predictions: pd.DataFrame, actual: pd.DataFrame) -> Dict[str, float]:
     """
     Analyze prediction interval calibration.
 
@@ -249,17 +225,13 @@ def analyze_interval_calibration(
         Interval calibration metrics
     """
     # Merge predictions with actuals
-    merged = predictions.merge(
-        actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual")
-    )
+    merged = predictions.merge(actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual"))
 
     if "q05" not in merged.columns or "q95" not in merged.columns:
         return {"error": "Quantile columns not found"}
 
     # Check coverage
-    within_interval = (merged["sales_actual"] >= merged["q05"]) & (
-        merged["sales_actual"] <= merged["q95"]
-    )
+    within_interval = (merged["sales_actual"] >= merged["q05"]) & (merged["sales_actual"] <= merged["q95"])
 
     # Interval width statistics
     interval_width = merged["q95"] - merged["q05"]
@@ -293,9 +265,7 @@ def generate_diagnostic_report(predictions: pd.DataFrame, actual: pd.DataFrame) 
     from src.metrics import calculate_ml_metrics
 
     # Merge predictions with actuals
-    merged = predictions.merge(
-        actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual")
-    )
+    merged = predictions.merge(actual, on=["store", "item", "date"], how="inner", suffixes=("_pred", "_actual"))
 
     y_true = merged["sales_actual"].values
     y_pred = merged["sales_pred"].values
@@ -311,8 +281,6 @@ def generate_diagnostic_report(predictions: pd.DataFrame, actual: pd.DataFrame) 
     }
 
     if y_q05 is not None and y_q95 is not None:
-        report["interval_calibration"] = analyze_interval_calibration(
-            predictions, actual
-        )
+        report["interval_calibration"] = analyze_interval_calibration(predictions, actual)
 
     return report

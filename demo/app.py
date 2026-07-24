@@ -50,9 +50,7 @@ st.markdown(
     '<h1 class="main-title">🛒 Retail Demand Forecasting Dashboard</h1>',
     unsafe_allow_html=True,
 )
-st.markdown(
-    "**Real-World LightGBM Model** · Point forecast + Q5/Q95 prediction interval ribbon · SMAPE: 11.6%"
-)
+st.markdown("**Real-World LightGBM Model** · Point forecast + Q5/Q95 prediction interval ribbon · SMAPE: 11.6%")
 
 # ──────────────────────────────────────────────
 # Load data
@@ -90,9 +88,7 @@ pred_df = load_predictions()
 test_df = load_test()
 
 if train_df is None:
-    st.error(
-        "⚠️ Training data not found at `data/raw/train.csv`. Please add the raw Kaggle data."
-    )
+    st.error("⚠️ Training data not found at `data/raw/train.csv`. Please add the raw Kaggle data.")
     st.stop()
 
 # ──────────────────────────────────────────────
@@ -139,43 +135,30 @@ if METRICS_PATH.exists():
     with open(METRICS_PATH) as f:
         metrics = json.load(f)
     st.sidebar.metric("CV SMAPE", f"{metrics.get('smape', 0):.2f}%")
-    st.sidebar.metric(
-        "Interval Coverage", f"{metrics.get('interval_coverage_pct', 0):.1f}%"
-    )
+    st.sidebar.metric("Interval Coverage", f"{metrics.get('interval_coverage_pct', 0):.1f}%")
 
 # ──────────────────────────────────────────────
 # Filter data for selected store/item
 # ──────────────────────────────────────────────
-hist_full = train_df[
-    (train_df["store"] == selected_store) & (train_df["item"] == selected_item)
-].copy()
+hist_full = train_df[(train_df["store"] == selected_store) & (train_df["item"] == selected_item)].copy()
 
 # Apply date range filter
 if len(date_range) == 2:
     start_date, end_date = date_range
-    hist = hist_full[
-        (hist_full["date"].dt.date >= start_date)
-        & (hist_full["date"].dt.date <= end_date)
-    ].copy()
+    hist = hist_full[(hist_full["date"].dt.date >= start_date) & (hist_full["date"].dt.date <= end_date)].copy()
 else:
     hist = hist_full.copy()
 
 forecast = None
 if pred_df is not None and test_df is not None:
-    test_filtered = test_df[
-        (test_df["store"] == selected_store) & (test_df["item"] == selected_item)
-    ].copy()
+    test_filtered = test_df[(test_df["store"] == selected_store) & (test_df["item"] == selected_item)].copy()
     if "id" in test_filtered.columns and "id" in pred_df.columns:
-        forecast = test_filtered.merge(
-            pred_df[["id", "sales", "q05", "q95"]], on="id", how="left"
-        )
+        forecast = test_filtered.merge(pred_df[["id", "sales", "q05", "q95"]], on="id", how="left")
 
 # ──────────────────────────────────────────────
 # Tabs for different views
 # ──────────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5 = st.tabs(
-    ["📈 Forecast", "📊 Analysis", "🔬 Model Info", "📦 Batch", "⚙️ Advanced"]
-)
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Forecast", "📊 Analysis", "🔬 Model Info", "📦 Batch", "⚙️ Advanced"])
 
 with tab1:
     st.header(f"Store {selected_store} · Item {selected_item} — Demand Forecast")
@@ -235,9 +218,7 @@ with tab1:
 
     except ImportError:
         st.line_chart(hist.set_index("date")["sales"])
-        st.warning(
-            "Install plotly for the full interactive chart: `pip install plotly`"
-        )
+        st.warning("Install plotly for the full interactive chart: `pip install plotly`")
 
     # Metrics panel
     if forecast is not None and not forecast.empty and "sales" in forecast.columns:
@@ -246,9 +227,7 @@ with tab1:
         col1.metric("Mean Forecast", f"{forecast['sales'].mean():.1f}")
         col2.metric("Min Forecast", f"{forecast['sales'].min():.1f}")
         col3.metric("Max Forecast", f"{forecast['sales'].max():.1f}")
-        col4.metric(
-            "Forecast Range", f"{forecast['sales'].max() - forecast['sales'].min():.1f}"
-        )
+        col4.metric("Forecast Range", f"{forecast['sales'].max() - forecast['sales'].min():.1f}")
 
         if "q05" in forecast.columns and "q95" in forecast.columns:
             st.subheader("📉 Prediction Interval Quality")
@@ -260,9 +239,7 @@ with tab1:
 
         st.subheader("📋 Forecast Data")
         st.dataframe(
-            forecast[["date", "store", "item", "sales", "q05", "q95"]].rename(
-                columns={"sales": "point_forecast"}
-            ),
+            forecast[["date", "store", "item", "sales", "q05", "q95"]].rename(columns={"sales": "point_forecast"}),
             use_container_width=True,
         )
 
@@ -349,25 +326,17 @@ with tab2:
                 recent_hist = recent_hist.tail(90)
 
                 if len(recent_hist) == len(recent_forecast):
-                    residuals = residual_analysis(
-                        recent_hist["sales"].values, recent_forecast["sales"].values
-                    )
+                    residuals = residual_analysis(recent_hist["sales"].values, recent_forecast["sales"].values)
 
                     col1, col2, col3 = st.columns(3)
                     col1.metric("Mean Residual", f"{residuals['mean_residual']:.2f}")
                     col2.metric("Std Residual", f"{residuals['std_residual']:.2f}")
-                    col3.metric(
-                        "Median Residual", f"{residuals['median_residual']:.2f}"
-                    )
+                    col3.metric("Median Residual", f"{residuals['median_residual']:.2f}")
 
                     # Residual distribution
                     st.write("**Residual Distribution**")
-                    residual_values = (
-                        recent_hist["sales"].values - recent_forecast["sales"].values
-                    )
-                    fig_residuals = px.histogram(
-                        x=residual_values, nbins=30, title="Residual Distribution"
-                    )
+                    residual_values = recent_hist["sales"].values - recent_forecast["sales"].values
+                    fig_residuals = px.histogram(x=residual_values, nbins=30, title="Residual Distribution")
                     st.plotly_chart(fig_residuals, use_container_width=True)
 
                     # Error Detection / Outlier Flagging
@@ -389,9 +358,7 @@ with tab2:
                     )
 
                     if len(outliers) > 0:
-                        st.warning(
-                            f"Found {len(outliers)} outlier residuals (>2σ from mean)"
-                        )
+                        st.warning(f"Found {len(outliers)} outlier residuals (>2σ from mean)")
         except ImportError:
             st.info("Install scipy for advanced diagnostics")
         except Exception as e:
@@ -418,9 +385,7 @@ with tab2:
             )
 
             # Add rolling mean for trend comparison
-            hist_comparison["rolling_mean_30"] = (
-                hist_comparison["sales"].rolling(30, min_periods=1).mean()
-            )
+            hist_comparison["rolling_mean_30"] = hist_comparison["sales"].rolling(30, min_periods=1).mean()
             fig_hist.add_trace(
                 go.Scatter(
                     x=hist_comparison["date"],
@@ -639,15 +604,11 @@ with tab4:
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            lead_time = st.number_input(
-                "Lead Time (days)", min_value=1, max_value=90, value=7
-            )
+            lead_time = st.number_input("Lead Time (days)", min_value=1, max_value=90, value=7)
         with col2:
             service_level = st.selectbox("Service Level", [0.90, 0.95, 0.99], index=1)
         with col3:
-            ordering_cost = st.number_input(
-                "Ordering Cost ($)", min_value=1, max_value=1000, value=50
-            )
+            ordering_cost = st.number_input("Ordering Cost ($)", min_value=1, max_value=1000, value=50)
 
         holding_cost_pct = st.slider("Holding Cost (%)", 1, 50, 25) / 100
 
@@ -714,14 +675,10 @@ with tab4:
                     # Simulate batch processing (in real implementation, would call model)
                     progress = (i * len(batch_items) + j + 1) / total_combinations
                     progress_bar.progress(progress)
-                    status_text.text(
-                        f"Processing Store {store}, Item {item} ({progress*100:.1f}%)"
-                    )
+                    status_text.text(f"Processing Store {store}, Item {item} ({progress*100:.1f}%)")
 
                     # Get forecast for this combination
-                    hist_subset = train_df[
-                        (train_df["store"] == store) & (train_df["item"] == item)
-                    ].copy()
+                    hist_subset = train_df[(train_df["store"] == store) & (train_df["item"] == item)].copy()
                     if len(hist_subset) > 0:
                         batch_results.append(
                             {
@@ -729,8 +686,7 @@ with tab4:
                                 "item": item,
                                 "historical_mean": hist_subset["sales"].mean(),
                                 "historical_std": hist_subset["sales"].std(),
-                                "forecast_mean": hist_subset["sales"].mean()
-                                * 1.05,  # Simulated 5% growth
+                                "forecast_mean": hist_subset["sales"].mean() * 1.05,  # Simulated 5% growth
                                 "forecast_min": hist_subset["sales"].mean() * 0.9,
                                 "forecast_max": hist_subset["sales"].mean() * 1.2,
                             }
@@ -761,20 +717,14 @@ with tab5:
 
     # Model Comparison (Amazon Forecast-style)
     st.subheader("🤖 Model Comparison")
-    st.info(
-        "Amazon Forecast-style: Compare model accuracy over different backtest windows and configurations"
-    )
+    st.info("Amazon Forecast-style: Compare model accuracy over different backtest windows and configurations")
     st.warning(
         "Note: This feature compares the same LightGBM model evaluated on different time periods (backtest windows) to assess stability."
     )
 
     # Configure backtest windows
-    n_windows = st.slider(
-        "Number of Backtest Windows", min_value=2, max_value=5, value=3
-    )
-    window_size_months = st.slider(
-        "Window Size (months)", min_value=1, max_value=6, value=3
-    )
+    n_windows = st.slider("Number of Backtest Windows", min_value=2, max_value=5, value=3)
+    window_size_months = st.slider("Window Size (months)", min_value=1, max_value=6, value=3)
 
     if st.button("Run Backtest Comparison"):
         try:
@@ -804,9 +754,7 @@ with tab5:
                 )
 
             if not backtest_results.empty:
-                st.write(
-                    f"**Backtest Results ({n_windows} windows, {window_size_months} months each)**"
-                )
+                st.write(f"**Backtest Results ({n_windows} windows, {window_size_months} months each)**")
                 st.dataframe(backtest_results, width="stretch")
 
                 # Calculate statistics across windows
@@ -844,9 +792,7 @@ with tab5:
                 if smape_cv < 10:
                     st.success("✅ Model shows high stability across backtest windows")
                 elif smape_cv < 20:
-                    st.warning(
-                        "⚠️ Model shows moderate stability - consider monitoring"
-                    )
+                    st.warning("⚠️ Model shows moderate stability - consider monitoring")
                 else:
                     st.error("❌ Model shows high variability - may need retraining")
 
@@ -898,13 +844,9 @@ with tab5:
             # Drift detection
             drift_result = tracker.detect_drift(metric="smape", threshold=0.15)
             if drift_result["drift_detected"]:
-                st.error(
-                    f"⚠️ Model drift detected! SMAPE changed by {drift_result['percentage_change']:.1f}%"
-                )
+                st.error(f"⚠️ Model drift detected! SMAPE changed by {drift_result['percentage_change']:.1f}%")
             else:
-                st.success(
-                    f"✅ No model drift detected (change: {drift_result.get('percentage_change', 0):.1f}%)"
-                )
+                st.success(f"✅ No model drift detected (change: {drift_result.get('percentage_change', 0):.1f}%)")
 
         # Summary
         summary = tracker.get_summary()
@@ -914,24 +856,16 @@ with tab5:
 
     # Subset Forecasting
     st.subheader("🎯 Subset Forecasting")
-    st.info(
-        "Amazon Forecast-style: Forecast only important items to reduce compute costs"
-    )
+    st.info("Amazon Forecast-style: Forecast only important items to reduce compute costs")
 
-    top_n = st.slider(
-        "Number of Top Items to Forecast", min_value=10, max_value=500, value=100
-    )
-    importance_metric = st.selectbox(
-        "Importance Metric", ["total_sales", "avg_sales", "variance"], index=0
-    )
+    top_n = st.slider("Number of Top Items to Forecast", min_value=10, max_value=500, value=100)
+    importance_metric = st.selectbox("Importance Metric", ["total_sales", "avg_sales", "variance"], index=0)
 
     if st.button("Identify Important Items"):
         try:
             from src.model_tracking import subset_forecast_by_importance
 
-            filtered_df, top_items = subset_forecast_by_importance(
-                train_df, top_n=top_n, importance_metric=importance_metric
-            )
+            filtered_df, top_items = subset_forecast_by_importance(train_df, top_n=top_n, importance_metric=importance_metric)
 
             st.write(f"**Top {top_n} Important Items (by {importance_metric})**")
             st.dataframe(top_items, use_container_width=True)

@@ -81,9 +81,7 @@ def test_output_schema_validation():
         tmpdir_path = Path(tmpdir)
 
         # Create required files
-        (tmpdir_path / "train.csv").write_text(
-            "date,store,item,sales\n2017-01-01,1,1,50"
-        )
+        (tmpdir_path / "train.csv").write_text("date,store,item,sales\n2017-01-01,1,1,50")
         (tmpdir_path / "test.csv").write_text("date,store,item\n2018-01-01,1,1")
         (tmpdir_path / "sample_submission.csv").write_text("id,sales\n0,50")
 
@@ -110,9 +108,7 @@ def test_feature_count_consistency():
     df_featured = prepare_ml_data(df, is_train=True)
 
     # Count feature columns (exclude date, sales, is_train, id)
-    feature_cols = [
-        c for c in df_featured.columns if c not in ["date", "sales", "is_train", "id"]
-    ]
+    feature_cols = [c for c in df_featured.columns if c not in ["date", "sales", "is_train", "id"]]
 
     # Should have a reasonable number of features (40-50 range)
     assert 30 <= len(feature_cols) <= 60

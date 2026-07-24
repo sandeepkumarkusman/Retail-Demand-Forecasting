@@ -39,16 +39,12 @@ def fit_lightgbm_model(data: pd.DataFrame, config: dict = None) -> dict[str, obj
     val_split = train_df[val_mask]
     train_split = train_df[~val_mask]
 
-    features = [
-        c for c in train_df.columns if c not in ["date", "sales", "is_train", "id"]
-    ]
+    features = [c for c in train_df.columns if c not in ["date", "sales", "is_train", "id"]]
 
     X_train, y_train = train_split[features], train_split["sales"]
     X_val, y_val = val_split[features], val_split["sales"]
 
-    print(
-        f"Training LightGBM on {len(X_train)} samples, validating on {len(X_val)} samples."
-    )
+    print(f"Training LightGBM on {len(X_train)} samples, validating on {len(X_val)} samples.")
     print(f"Features ({len(features)}): {features[:5]}...")
 
     base_params = {

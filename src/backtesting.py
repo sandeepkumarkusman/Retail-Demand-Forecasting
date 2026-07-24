@@ -39,9 +39,7 @@ def walk_forward_splits(
     for fold_idx in range(n_folds):
         # Validation window ends at max_date minus (fold_idx * fold_size_months)
         val_end = max_date - pd.DateOffset(months=fold_idx * fold_size_months)
-        val_start = (
-            val_end - pd.DateOffset(months=fold_size_months) + pd.Timedelta(days=1)
-        )
+        val_start = val_end - pd.DateOffset(months=fold_size_months) + pd.Timedelta(days=1)
 
         if val_start <= min_date + pd.DateOffset(years=min_train_years):
             break
@@ -96,27 +94,11 @@ def evaluate_walk_forward(
 
         # Merge true sales with predictions to ensure alignment
         merged = val_fold[["id", "date", "sales"]].merge(pred_df, on="id")
-        y_true = (
-            merged["sales_x"].values
-            if "sales_x" in merged.columns
-            else merged["sales"].values
-        )
-        y_pred = (
-            merged["sales_y"].values
-            if "sales_y" in merged.columns
-            else merged["sales"].values
-        )
+        y_true = merged["sales_x"].values if "sales_x" in merged.columns else merged["sales"].values
+        y_pred = merged["sales_y"].values if "sales_y" in merged.columns else merged["sales"].values
 
-        y_q05 = (
-            pred_df.set_index("id").loc[merged["id"]]["q05"].values
-            if "q05" in pred_df.columns
-            else None
-        )
-        y_q95 = (
-            pred_df.set_index("id").loc[merged["id"]]["q95"].values
-            if "q95" in pred_df.columns
-            else None
-        )
+        y_q05 = pred_df.set_index("id").loc[merged["id"]]["q05"].values if "q05" in pred_df.columns else None
+        y_q95 = pred_df.set_index("id").loc[merged["id"]]["q95"].values if "q95" in pred_df.columns else None
 
         metrics = calculate_ml_metrics(y_true, y_pred, y_q05, y_q95)
         metrics["fold"] = fold_idx

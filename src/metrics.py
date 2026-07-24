@@ -81,15 +81,11 @@ def calculate_ml_metrics(
     if y_q05 is not None and y_q95 is not None:
         # Pinball loss for Q05
         diff_05 = y_true - y_q05
-        metrics["pinball_q05"] = float(
-            np.mean(np.where(diff_05 >= 0, 0.05 * diff_05, -0.95 * diff_05))
-        )
+        metrics["pinball_q05"] = float(np.mean(np.where(diff_05 >= 0, 0.05 * diff_05, -0.95 * diff_05)))
 
         # Pinball loss for Q95
         diff_95 = y_true - y_q95
-        metrics["pinball_q95"] = float(
-            np.mean(np.where(diff_95 >= 0, 0.95 * diff_95, -0.05 * diff_95))
-        )
+        metrics["pinball_q95"] = float(np.mean(np.where(diff_95 >= 0, 0.95 * diff_95, -0.05 * diff_95)))
 
         # Interval coverage
         covered = (y_true >= y_q05) & (y_true <= y_q95)

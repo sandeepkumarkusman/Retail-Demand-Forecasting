@@ -7,12 +7,8 @@ import pandas as pd
 
 def plot_year_patterns(data: pd.DataFrame) -> None:
     """Plot yearly relative sales by item and by store."""
-    agg_year_item = pd.pivot_table(
-        data, index="year", columns="item", values="sales", aggfunc=np.mean
-    ).values
-    agg_year_store = pd.pivot_table(
-        data, index="year", columns="store", values="sales", aggfunc=np.mean
-    ).values
+    agg_year_item = pd.pivot_table(data, index="year", columns="item", values="sales", aggfunc=np.mean).values
+    agg_year_store = pd.pivot_table(data, index="year", columns="store", values="sales", aggfunc=np.mean).values
 
     plt.figure(figsize=(12, 5))
     plt.subplot(121)
@@ -30,12 +26,8 @@ def plot_year_patterns(data: pd.DataFrame) -> None:
 
 def plot_month_patterns(data: pd.DataFrame) -> None:
     """Plot monthly relative sales by item and by store."""
-    agg_month_item = pd.pivot_table(
-        data, index="month", columns="item", values="sales", aggfunc=np.mean
-    ).values
-    agg_month_store = pd.pivot_table(
-        data, index="month", columns="store", values="sales", aggfunc=np.mean
-    ).values
+    agg_month_item = pd.pivot_table(data, index="month", columns="item", values="sales", aggfunc=np.mean).values
+    agg_month_store = pd.pivot_table(data, index="month", columns="store", values="sales", aggfunc=np.mean).values
 
     plt.figure(figsize=(12, 5))
     plt.subplot(121)
@@ -53,12 +45,8 @@ def plot_month_patterns(data: pd.DataFrame) -> None:
 
 def plot_dayofweek_patterns(data: pd.DataFrame) -> None:
     """Plot day-of-week relative sales by item and by store."""
-    agg_dow_item = pd.pivot_table(
-        data, index="dayofweek", columns="item", values="sales", aggfunc=np.mean
-    ).values
-    agg_dow_store = pd.pivot_table(
-        data, index="dayofweek", columns="store", values="sales", aggfunc=np.mean
-    ).values
+    agg_dow_item = pd.pivot_table(data, index="dayofweek", columns="item", values="sales", aggfunc=np.mean).values
+    agg_dow_store = pd.pivot_table(data, index="dayofweek", columns="store", values="sales", aggfunc=np.mean).values
 
     plt.figure(figsize=(12, 5))
     plt.subplot(121)
@@ -76,15 +64,9 @@ def plot_dayofweek_patterns(data: pd.DataFrame) -> None:
 
 def plot_calendar_interactions(data: pd.DataFrame) -> None:
     """Plot interactions between calendar components (DOW, Month, Year)."""
-    agg_dow_month = pd.pivot_table(
-        data, index="dayofweek", columns="month", values="sales", aggfunc=np.mean
-    ).values
-    agg_month_year = pd.pivot_table(
-        data, index="month", columns="year", values="sales", aggfunc=np.mean
-    ).values
-    agg_dow_year = pd.pivot_table(
-        data, index="dayofweek", columns="year", values="sales", aggfunc=np.mean
-    ).values
+    agg_dow_month = pd.pivot_table(data, index="dayofweek", columns="month", values="sales", aggfunc=np.mean).values
+    agg_month_year = pd.pivot_table(data, index="month", columns="year", values="sales", aggfunc=np.mean).values
+    agg_dow_year = pd.pivot_table(data, index="dayofweek", columns="year", values="sales", aggfunc=np.mean).values
 
     plt.figure(figsize=(18, 5))
     plt.subplot(131)
@@ -107,9 +89,7 @@ def plot_calendar_interactions(data: pd.DataFrame) -> None:
 
 def plot_store_item_patterns(data: pd.DataFrame) -> None:
     """Plot relative sales across stores and items."""
-    agg_store_item = pd.pivot_table(
-        data, index="store", columns="item", values="sales", aggfunc=np.mean
-    ).values
+    agg_store_item = pd.pivot_table(data, index="store", columns="item", values="sales", aggfunc=np.mean).values
 
     plt.figure(figsize=(14, 5))
     plt.subplot(121)

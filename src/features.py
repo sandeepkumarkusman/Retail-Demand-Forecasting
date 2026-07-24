@@ -57,11 +57,7 @@ def expand_ml_date_features(df: pd.DataFrame) -> pd.DataFrame:
         )
         # We need to assign it back properly based on the original index
         df_merged.index = df_sorted.index
-        df["days_to_holiday"] = (
-            (df_merged["holiday_date"] - df_merged["date"])
-            .dt.days.fillna(999)
-            .astype(int)
-        )
+        df["days_to_holiday"] = (df_merged["holiday_date"] - df_merged["date"]).dt.days.fillna(999).astype(int)
     else:
         df["days_to_holiday"] = 999
 
@@ -83,25 +79,11 @@ def add_lag_and_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
         df[f"sales_lag_{lag}"] = df.groupby(["store", "item"])["sales"].shift(lag)
 
     # Cross-series aggregate lags
-    df_store_daily = (
-        df.groupby(["store", "date"])["sales"]
-        .sum()
-        .reset_index()
-        .rename(columns={"sales": "store_total_sales"})
-    )
-    df_item_daily = (
-        df.groupby(["item", "date"])["sales"]
-        .sum()
-        .reset_index()
-        .rename(columns={"sales": "item_total_sales"})
-    )
+    df_store_daily = df.groupby(["store", "date"])["sales"].sum().reset_index().rename(columns={"sales": "store_total_sales"})
+    df_item_daily = df.groupby(["item", "date"])["sales"].sum().reset_index().rename(columns={"sales": "item_total_sales"})
 
-    df_store_daily["store_total_sales_lag_91"] = df_store_daily.groupby("store")[
-        "store_total_sales"
-    ].shift(91)
-    df_item_daily["item_total_sales_lag_91"] = df_item_daily.groupby("item")[
-        "item_total_sales"
-    ].shift(91)
+    df_store_daily["store_total_sales_lag_91"] = df_store_daily.groupby("store")["store_total_sales"].shift(91)
+    df_item_daily["item_total_sales_lag_91"] = df_item_daily.groupby("item")["item_total_sales"].shift(91)
 
     df = df.merge(
         df_store_daily[["store", "date", "store_total_sales_lag_91"]],
