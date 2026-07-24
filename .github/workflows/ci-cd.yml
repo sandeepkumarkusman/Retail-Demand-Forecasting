@@ -304,6 +304,8 @@ jobs:
         run: |
           if [ "${{ needs.deploy.result }}" == "success" ]; then
             echo "Deployment successful!"
+          elif [ "${{ needs.deploy.result }}" == "skipped" ]; then
+            echo "Deployment skipped (not on main branch or not a push event)"
           else
             echo "Deployment failed!"
             exit 1
