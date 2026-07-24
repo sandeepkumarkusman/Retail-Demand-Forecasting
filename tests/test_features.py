@@ -32,9 +32,8 @@ def test_lag_features_no_leakage():
     assert df_featured["sales_lag_91"].isna().sum() == 91
 
     # Check that non-NaN lag_91 values equal sales shifted by 91
-    valid_mask = ~df_featured["sales_lag_91"].isna()
-    expected = df.loc[valid_mask.index - 91, "sales"].values
-    actual = df_featured.loc[valid_mask, "sales_lag_91"].values
+    expected = df["sales"].iloc[:-91].values
+    actual = df_featured["sales_lag_91"].iloc[91:].values
     np.testing.assert_array_equal(expected, actual)
 
 
